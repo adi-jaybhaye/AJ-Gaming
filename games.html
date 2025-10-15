@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Games Hub</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Press+Start+2P&family=Bebas+Neue&family=Audiowide&family=Monoton&family=Share+Tech+Mono&family=Rajdhani:wght@400;700&family=VT323&display=swap" rel="stylesheet">
+
+  <style>
+    body{
+    background: url('HomeBg1.gif');
+    background-size: cover;
+    backdrop-filter: blur(5px);
+    background-repeat: no-repeat;
+    background-position: center;
+    }
+    
+    .h1{
+      font-family: Josefin Sans;
+    }
+    
+  </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col items-center px-4">
+
+  <!-- 🔥 Header -->
+  <header class="w-full max-w-6xl py-6 flex justify-between items-center">
+    <h1 class="text-3xl font-family-Josefin-Sans font-extrabold text-white-400">Welcome, Player</h1>
+    <button onclick="window.location.href='login.html'" id="logout-btn" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-md font-semibold transition duration-200">Logout</button>
+  </header>
+
+  <!-- 🕹️ Game Grid -->
+  <section class="w-full max-w-6xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+    
+    <!-- 🔲 Game Card 1 -->
+    <div id="card1" class="bg-[url('MoneyHeist.jpg')] bg-no-repeat bg-center bg-cover p-6 rounded-xl shadow-lg hover:scale-105 transition duration-300">
+      <h2 class="text-xl font-bold mb-2 text-400">Money Heist</h2>
+      <p class="text-sm text-300 mb-4">Stealth, strategy, lasers. Infiltrate and escape like a mastermind.</p>
+      <a href="Money-Heist.html" class="inline-block bg-green-600 hover:bg-green-700 px-4 py-2 rounded transition">Play Now</a>
+    </div>
+
+    <!-- 🔲 Game Card 2 -->
+    <div id="card2" class="bg-[url('TicTacToe.jpg')] bg-no-repeat bg-center bg-cover p-6 rounded-xl shadow-lg hover:scale-105 transition duration-300">
+      <h2 class="text-xl font-bold mb-2 text-black-400 text-black">Tic Tac Toe</h2>
+      <p class="text-sm text-black-300 text-black mb-4">A classic brain battle — now with smooth UI & sound effects.</p>
+      <a href="tic-tac-toe.html" class="inline-block bg-sky-600 hover:bg-sky-600 px-4 py-2 rounded transition">Play Now</a>
+    </div>
+
+    <!-- 🔲 Game Card 3 -->
+    <div id="card3" class="bg-[url('house.jpg')] bg-no-repeat bg-center bg-cover p-6 rounded-xl shadow-lg hover:scale-105 transition duration-300">
+      <h2 class="text-xl font-bold mb-2 text-white-400">Haunted House Escape</h2>
+      <p class="text-sm text-white-300 mb-4">Solve eerie puzzles and escape before it’s too late........</p>
+      <a href="haunted-house.html" class="inline-block bg-purple-600 hover:bg-purple-400 px-4 py-2 rounded transition">Play Now</a>
+    </div>
+
+  </section>
+
+  <!-- 👟 Optional Footer -->
+  <footer class="fixed bottom-0 left-0 w-full h-20  backdrop-blur-sm shadow-md py-3 text-center flex items-center justify-center text-white">
+    © 2025 | with ❤️ by ADITYA
+  </footer>
+
+  <!-- 🔐 Logout Logic (Firebase ready) -->
+  <script>
+    const logoutBtn = document.getElementById("logout-btn");
+    logoutBtn.addEventListener("click", () => {
+      if (firebase && firebase.auth) {
+        firebase.auth().signOut().then(() => {
+          alert("🔒 Logged out!");
+          window.location.href = "login.html";
+        }).catch((error) => {
+          alert("❌ Logout error: " + error.message);
+        });
+      } else {
+        window.location.href = "login.html"; // Fallback
+      }
+    });
+  </script>
+
+  <!-- Firebase Auth SDK (if needed) -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script>
+    // Add your Firebase config here if needed
+    var firebaseConfig = {
+      // your firebase config
+    };
+    firebase.initializeApp(firebaseConfig);
+  </script>
+
+</body>
+</html>
