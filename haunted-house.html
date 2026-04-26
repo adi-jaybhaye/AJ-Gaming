@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Haunted House Escape — AJ Gaming</title>
+  <meta name="description" content="Haunted House Escape — explore dark rooms, find hidden items, solve puzzles and escape before it's too late." />
+  <link rel="stylesheet" href="styles.css" />
+
+  <style>
+    /* ── Page-specific: Haunted House ────────────────────────── */
+    .hh-bg {
+      position: fixed; inset: 0; z-index: -2;
+      background:
+        radial-gradient(900px 450px at 50% 30%, rgba(168,85,247,0.06), transparent),
+        radial-gradient(600px 300px at 20% 80%, rgba(239,68,68,0.04), transparent),
+        linear-gradient(180deg, #050508 0%, #000 100%);
+    }
+
+    /* ── Room Display ─────────────────────────────────────── */
+    .room-container {
+      width: 100%;
+      max-width: 720px;
+      position: relative;
+    }
+
+    .room-viewport {
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      background: var(--color-bg-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      position: relative;
+      overflow: hidden;
+      box-shadow: var(--shadow-lg);
+    }
+
+    /* Room background ambience */
+    .room-viewport::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .room-scene {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── Interactive Objects ──────────────────────────────── */
+    .room-object {
+      position: absolute;
+      cursor: pointer;
+      transition: all var(--duration-base) var(--ease-out);
+      font-size: 2rem;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));
+      user-select: none;
+      z-index: 2;
+    }
+
+    .room-object:hover {
+      transform: scale(1.15) translateY(-4px);
+      filter: drop-shadow(0 8px 24px rgba(168,85,247,0.4));
+    }
+
+    .room-object--found {
+      opacity: 0.3;
+      pointer-events: none;
+      transform: scale(0.8);
+    }
+
+    .room-object--glow {
+      animation: objectGlow 1.5s ease-in-out infinite;
+    }
+
+    @keyframes objectGlow {
+      0%, 100% { filter: drop-shadow(0 4px 12px rgba(168,85,247,0.3)); }
+      50%      { filter: drop-shadow(0 8px 24px rgba(168,85,247,0.6)); }
+    }
+
+    /* ── Room Description ─────────────────────────────────── */
+    .room-desc {
+      padding: var(--space-5);
+      text-align: center;
+    }
+
+    .room-name {
+      font-family: var(--font-display);
+      font-size: var(--text-xl);
+      margin-bottom: var(--space-2);
+      color: var(--color-purple);
+    }
+
+    .room-text {
+      font-size: var(--text-sm);
+      color: var(--color-text-secondary);
+      line-height: 1.6;
+      min-height: 2.4em;
+    }
+
+    /* ── Inventory ────────────────────────────────────────── */
+    .inventory {
+      display: flex;
+      gap: var(--space-2);
+      flex-wrap: wrap;
+      justify-content: center;
+      padding: var(--space-3);
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      min-height: 54px;
+      margin-top: var(--space-4);
+    }
+
+    .inventory__item {
+      width: 42px;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(168,85,247,0.1);
+      border: 1px solid rgba(168,85,247,0.2);
+      border-radius: var(--radius-sm);
+      font-size: 1.3rem;
+      cursor: help;
+      transition: all var(--duration-fast) ease;
+      position: relative;
+    }
+
+    .inventory__item:hover {
+      transform: scale(1.1);
+      background: rgba(168,85,247,0.2);
+    }
+
+    .inventory__item--active {
+      border-color: var(--color-gold);
+      box-shadow: 0 0 12px var(--color-gold-glow);
+    }
+
+    .inventory__empty {
+      padding: var(--space-2) var(--space-4);
+      color: var(--color-text-muted);
+      font-size: var(--text-xs);
+      font-style: italic;
+    }
+
+    /* ── Navigation Doors ─────────────────────────────────── */
+    .room-nav {
+      display: flex;
+      gap: var(--space-3);
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: var(--space-4);
+    }
+
+    /* ── Flicker Effect ──────────────────────────────────── */
+    @keyframes flicker {
+      0%   { opacity: 1; }
+      4%   { opacity: 0.4; }
+      8%   { opacity: 1; }
+      70%  { opacity: 1; }
+      72%  { opacity: 0.6; }
+      74%  { opacity: 1; }
+      100% { opacity: 1; }
+    }
+
+    .room-viewport--flicker::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.15);
+      animation: flicker 4s infinite;
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    /* ── Fog Overlay ──────────────────────────────────────── */
+    .room-fog {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 50%, transparent 30%, rgba(0,0,0,0.7) 100%);
+      pointer-events: none;
+      z-index: 2;
+      transition: opacity 0.5s ease;
+    }
+
+    /* ── Puzzle Modal specifics ───────────────────────────── */
+    .puzzle-input {
+      font-family: var(--font-mono);
+      font-size: var(--text-xl);
+      text-align: center;
+      letter-spacing: 8px;
+      text-transform: uppercase;
+    }
+
+    /* ── Room scene backgrounds ───────────────────────────── */
+    .scene-foyer {
+      background: linear-gradient(180deg, #0d0a14 0%, #1a0e22 40%, #12080e 100%);
+    }
+    .scene-library {
+      background: linear-gradient(180deg, #0e0c08 0%, #1c1509 40%, #0d0b06 100%);
+    }
+    .scene-kitchen {
+      background: linear-gradient(180deg, #080a0e 0%, #0f1318 40%, #060810 100%);
+    }
+    .scene-basement {
+      background: linear-gradient(180deg, #050505 0%, #0a0808 40%, #030303 100%);
+    }
+    .scene-attic {
+      background: linear-gradient(180deg, #0e0a0a 0%, #16100c 40%, #0a0706 100%);
+    }
+    .scene-exit {
+      background: linear-gradient(180deg, #050d0a 0%, #0a1a12 40%, #040c08 100%);
+    }
+
+    @media (max-width: 640px) {
+      .room-object { font-size: 1.5rem; }
+      .room-viewport { aspect-ratio: 4 / 3; }
+    }
+  </style>
+</head>
+
+<body class="page-wrapper bg-dot-grid">
+  <div class="hh-bg" aria-hidden="true"></div>
+
+  <main class="page-main">
+
+    <!-- Game Header -->
+    <header class="game-header animate-fade-in-up">
+      <h1 class="game-title" style="color: var(--color-purple);">Haunted House</h1>
+      <p class="game-subtitle">Explore, find items, solve puzzles — escape before it's too late</p>
+    </header>
+
+    <!-- HUD -->
+    <div class="hud animate-fade-in-up delay-1" id="hud">
+      <div class="hud__item">
+        <span class="hud__label">Room</span>
+        <span class="hud__value" id="hud-room">1 / 6</span>
+      </div>
+      <div class="hud__item">
+        <span class="hud__label">Items</span>
+        <span class="hud__value hud__value--gold" id="hud-items">0</span>
+      </div>
+      <div class="hud__item">
+        <span class="hud__label">Puzzles</span>
+        <span class="hud__value hud__value--primary" id="hud-puzzles">0 / 3</span>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="game-controls animate-fade-in-up delay-2">
+      <button class="btn btn--danger" id="restart-btn">🔄 Restart</button>
+      <button class="btn btn--ghost btn--sm" id="mute-btn">🔊</button>
+    </div>
+
+    <!-- Room Display -->
+    <div class="room-container animate-fade-in-scale delay-3">
+      <div class="room-viewport" id="room-viewport">
+        <div class="room-fog" id="room-fog"></div>
+        <div class="room-scene" id="room-scene"></div>
+      </div>
+
+      <div class="room-desc">
+        <div class="room-name" id="room-name">The Foyer</div>
+        <div class="room-text" id="room-text">A cold wind greets you as the door slams shut behind you…</div>
+      </div>
+
+      <!-- Inventory -->
+      <div style="text-align: center;">
+        <span class="hud__label" style="margin-bottom: var(--space-2); display: block;">Inventory</span>
+        <div class="inventory" id="inventory">
+          <span class="inventory__empty">No items yet — explore to find them</span>
+        </div>
+      </div>
+
+      <!-- Room Navigation -->
+      <div class="room-nav" id="room-nav"></div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    © 2025 AJ Gaming — Made with ❤️ by <a href="#">Aditya</a>
+  </footer>
+
+  <!-- Shared Utilities -->
+  <script src="shared.js"></script>
+
+  <script>
+    (() => {
+      'use strict';
+
+      /* ══════════════════════════════════════════════════════
+         GAME DATA — ROOMS, ITEMS, PUZZLES
+         ══════════════════════════════════════════════════════ */
+      const ROOMS = {
+        foyer: {
+          name: 'The Foyer',
+          scene: 'scene-foyer',
+          flicker: true,
+          text: 'A cold wind greets you as the heavy door slams shut. The air smells of dust and something… old. A grand staircase looms ahead.',
+          objects: [
+            { id: 'candle',    emoji: '🕯️', x: '15%', y: '60%', item: 'candle',   hint: 'A half-melted candle. It still has a wick.' },
+            { id: 'note1',     emoji: '📜', x: '70%', y: '45%', item: 'note_foyer', hint: 'A torn note reads: "The code is the year the house was built — 1847"' },
+            { id: 'portrait',  emoji: '🖼️', x: '50%', y: '20%', item: null,        hint: 'A dusty portrait. The eyes seem to follow you…' },
+          ],
+          exits: [
+            { label: '📚 Library →',      room: 'library' },
+            { label: '🍳 Kitchen →',      room: 'kitchen' },
+          ]
+        },
+
+        library: {
+          name: 'The Library',
+          scene: 'scene-library',
+          flicker: false,
+          text: 'Bookshelves tower to the ceiling. Some books are knocked over. A faint scratching noise comes from behind the walls.',
+          objects: [
+            { id: 'key_brass', emoji: '🔑', x: '80%', y: '55%', item: 'brass_key', hint: 'A brass key, tarnished with age. It looks like it fits a small lock.' },
+            { id: 'book',      emoji: '📖', x: '30%', y: '30%', item: null,          hint: 'A leather-bound book. Inside: "Look where fire meets stone."' },
+            { id: 'skull',     emoji: '💀', x: '55%', y: '70%', item: null,          hint: 'A skull sits on the desk. Its jaw seems loose…' },
+          ],
+          exits: [
+            { label: '← Foyer',          room: 'foyer' },
+            { label: '⬇ Basement →',     room: 'basement', requires: 'brass_key', locked_msg: '🔒 The basement door is locked. You need a key.' },
+          ]
+        },
+
+        kitchen: {
+          name: 'The Kitchen',
+          scene: 'scene-kitchen',
+          flicker: true,
+          text: 'Pots hang from the ceiling, swaying slightly despite no wind. The stove is cold, but you see scratch marks on the floor near the pantry.',
+          objects: [
+            { id: 'matches',   emoji: '🔥', x: '25%', y: '50%', item: 'matches',   hint: 'A box of matches — dry and usable. Light finds its way.' },
+            { id: 'knife',     emoji: '🔪', x: '65%', y: '35%', item: 'knife',     hint: 'A rusty kitchen knife. Could cut through something weak.' },
+            { id: 'plate',     emoji: '🍽️', x: '50%', y: '65%', item: null,         hint: 'A cracked dinner plate. Someone left in a hurry.' },
+          ],
+          exits: [
+            { label: '← Foyer',          room: 'foyer' },
+            { label: '🪜 Attic →',       room: 'attic', requires: 'candle', locked_msg: '🕯️ The attic stairs are pitch black. You need a light source.' },
+          ]
+        },
+
+        basement: {
+          name: 'The Basement',
+          scene: 'scene-basement',
+          flicker: true,
+          text: 'Damp stone walls drip with moisture. The air is thick. In the corner, an old safe sits bolted to the floor.',
+          objects: [
+            { id: 'safe',      emoji: '🔒', x: '50%', y: '50%', item: null,          hint: 'A heavy safe. It needs a 4-digit code.', puzzle: 'safe_code' },
+            { id: 'chains',    emoji: '⛓️', x: '20%', y: '70%', item: null,          hint: 'Rusted chains bolted to the wall. What was kept here?' },
+            { id: 'spider',    emoji: '🕷️', x: '75%', y: '30%', item: null,          hint: 'A very large spider scurries away. It was guarding something… the safe.' },
+          ],
+          exits: [
+            { label: '← Library',        room: 'library' },
+          ]
+        },
+
+        attic: {
+          name: 'The Attic',
+          scene: 'scene-attic',
+          flicker: false,
+          text: 'Dusty rafters creak above you. Old furniture covered in white sheets. Moonlight streams through a cracked window.',
+          objects: [
+            { id: 'mirror',    emoji: '🪞', x: '60%', y: '40%', item: null,          hint: 'An antique mirror. In its reflection, you see a shape behind you — but nothing is there.' },
+            { id: 'box',       emoji: '📦', x: '30%', y: '60%', item: null,          hint: 'A locked wooden box. It needs a code.', puzzle: 'box_code' },
+            { id: 'window',    emoji: '🪟', x: '80%', y: '25%', item: null,          hint: 'The window is nailed shut. If only you had something to pry it open…' },
+          ],
+          exits: [
+            { label: '← Kitchen',        room: 'kitchen' },
+          ]
+        },
+
+        exit_room: {
+          name: 'The Hidden Passage',
+          scene: 'scene-exit',
+          flicker: false,
+          text: 'A narrow passage leads to a heavy iron door. Beyond it… freedom. But the door has one final lock.',
+          objects: [
+            { id: 'final_door', emoji: '🚪', x: '50%', y: '45%', item: null, hint: 'The exit door.', puzzle: 'final_lock' },
+          ],
+          exits: []
+        }
+      };
+
+      /* ── Puzzles ──────────────────────────────────────────── */
+      const PUZZLES = {
+        safe_code: {
+          title: '🔒 Enter the Safe Code',
+          body: 'The safe needs a 4-digit code. Think… what year was this house built?',
+          answer: '1847',
+          reward_item: 'iron_key',
+          reward_msg: '🔑 The safe opens! Inside: an iron skeleton key.',
+          solved: false,
+        },
+        box_code: {
+          title: '📦 Unlock the Wooden Box',
+          body: 'The box has a 3-letter combination lock. The book said: "Look where fire meets stone." What element is that?',
+          answer: 'ASH',
+          reward_item: 'map',
+          reward_msg: '🗺️ Inside the box: a map showing a hidden passage from the basement!',
+          solved: false,
+        },
+        final_lock: {
+          title: '🚪 The Final Lock',
+          body: 'The door has a strange lock. It requires the iron key, the knife to cut the bindings, and the map to find the mechanism.<br><br>Do you have all three items?',
+          answer: null, // special: requires items
+          requires: ['iron_key', 'knife', 'map'],
+          solved: false,
+        }
+      };
+
+      /* ══════════════════════════════════════════════════════
+         STATE
+         ══════════════════════════════════════════════════════ */
+      let currentRoom  = 'foyer';
+      let inventory    = [];
+      let foundObjects = new Set();
+      let solvedPuzzles= new Set();
+
+      /* ══════════════════════════════════════════════════════
+         DOM CACHE
+         ══════════════════════════════════════════════════════ */
+      const roomViewport = document.getElementById('room-viewport');
+      const roomScene    = document.getElementById('room-scene');
+      const roomFog      = document.getElementById('room-fog');
+      const roomNameEl   = document.getElementById('room-name');
+      const roomTextEl   = document.getElementById('room-text');
+      const inventoryEl  = document.getElementById('inventory');
+      const roomNavEl    = document.getElementById('room-nav');
+      const hudRoom      = document.getElementById('hud-room');
+      const hudItems     = document.getElementById('hud-items');
+      const hudPuzzles   = document.getElementById('hud-puzzles');
+      const restartBtn   = document.getElementById('restart-btn');
+      const muteBtn      = document.getElementById('mute-btn');
+
+      const ROOM_KEYS = Object.keys(ROOMS);
+
+      /* ══════════════════════════════════════════════════════
+         RENDERING
+         ══════════════════════════════════════════════════════ */
+      function renderRoom() {
+        const room = ROOMS[currentRoom];
+
+        // Scene background
+        roomViewport.className = 'room-viewport';
+        roomViewport.classList.add(room.scene);
+        if (room.flicker) roomViewport.classList.add('room-viewport--flicker');
+
+        // Fog (less fog if player has candle + matches)
+        const hasLight = inventory.includes('candle') && inventory.includes('matches');
+        roomFog.style.opacity = hasLight ? '0.3' : '1';
+
+        // Room info
+        roomNameEl.textContent = room.name;
+        roomTextEl.textContent = room.text;
+
+        // Objects
+        roomScene.innerHTML = '';
+        room.objects.forEach(obj => {
+          if (foundObjects.has(obj.id) && obj.item) return; // hide collected items
+
+          const el = document.createElement('div');
+          el.className = 'room-object';
+          if (obj.puzzle && !solvedPuzzles.has(obj.puzzle)) {
+            el.classList.add('room-object--glow');
+          }
+          el.textContent = obj.emoji;
+          el.style.left = obj.x;
+          el.style.top = obj.y;
+          el.title = 'Click to interact';
+          el.setAttribute('role', 'button');
+          el.setAttribute('tabindex', '0');
+          el.setAttribute('aria-label', obj.hint.substring(0, 40));
+
+          el.addEventListener('click', () => interactWithObject(obj));
+          el.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); interactWithObject(obj); }
+          });
+
+          roomScene.appendChild(el);
+        });
+
+        // Navigation exits
+        roomNavEl.innerHTML = '';
+        room.exits.forEach(exit => {
+          const btn = document.createElement('button');
+          btn.className = 'btn btn--ghost';
+          btn.textContent = exit.label;
+
+          btn.addEventListener('click', () => {
+            if (exit.requires && !inventory.includes(exit.requires)) {
+              AJ.Toast.show(exit.locked_msg || '🔒 This path is locked.');
+              AJ.Sound.play('error');
+              return;
+            }
+            goToRoom(exit.room);
+          });
+
+          roomNavEl.appendChild(btn);
+        });
+
+        // HUD
+        const roomIndex = ROOM_KEYS.indexOf(currentRoom) + 1;
+        hudRoom.textContent = `${roomIndex} / ${ROOM_KEYS.length}`;
+        hudItems.textContent = inventory.length;
+        hudPuzzles.textContent = `${solvedPuzzles.size} / ${Object.keys(PUZZLES).length}`;
+      }
+
+      function renderInventory() {
+        inventoryEl.innerHTML = '';
+        if (inventory.length === 0) {
+          inventoryEl.innerHTML = '<span class="inventory__empty">No items yet — explore to find them</span>';
+          return;
+        }
+
+        const ITEM_EMOJIS = {
+          candle: '🕯️', matches: '🔥', brass_key: '🔑', knife: '🔪',
+          iron_key: '🗝️', map: '🗺️', note_foyer: '📜'
+        };
+
+        const ITEM_NAMES = {
+          candle: 'Candle', matches: 'Matches', brass_key: 'Brass Key', knife: 'Kitchen Knife',
+          iron_key: 'Iron Key', map: 'Hidden Map', note_foyer: 'Torn Note'
+        };
+
+        inventory.forEach(item => {
+          const el = document.createElement('div');
+          el.className = 'inventory__item';
+          el.textContent = ITEM_EMOJIS[item] || '❓';
+          el.title = ITEM_NAMES[item] || item;
+          el.setAttribute('aria-label', ITEM_NAMES[item] || item);
+          inventoryEl.appendChild(el);
+        });
+      }
+
+      /* ══════════════════════════════════════════════════════
+         INTERACTIONS
+         ══════════════════════════════════════════════════════ */
+      function interactWithObject(obj) {
+        AJ.Sound.play('click');
+
+        // If it's a puzzle
+        if (obj.puzzle && !solvedPuzzles.has(obj.puzzle)) {
+          openPuzzle(obj.puzzle);
+          return;
+        }
+
+        // If it gives an item
+        if (obj.item && !foundObjects.has(obj.id)) {
+          foundObjects.add(obj.id);
+          if (!inventory.includes(obj.item)) {
+            inventory.push(obj.item);
+          }
+          AJ.Sound.play('loot');
+          AJ.Toast.show(`Found: ${obj.hint.split('.')[0]}`, 2500);
+          AJ.Particles.spawn(window.innerWidth / 2, window.innerHeight / 2, 8, ['#a855f7','#c084fc','#fbbf24']);
+          renderRoom();
+          renderInventory();
+          return;
+        }
+
+        // Just a hint
+        AJ.Toast.show(obj.hint, 3000);
+      }
+
+      /* ══════════════════════════════════════════════════════
+         PUZZLES
+         ══════════════════════════════════════════════════════ */
+      function openPuzzle(puzzleId) {
+        const puzzle = PUZZLES[puzzleId];
+        if (!puzzle || puzzle.solved) return;
+
+        // Special case: final lock requires items
+        if (puzzleId === 'final_lock') {
+          const hasAll = puzzle.requires.every(item => inventory.includes(item));
+          if (!hasAll) {
+            const missing = puzzle.requires.filter(i => !inventory.includes(i));
+            AJ.Modal.create({
+              title: puzzle.title,
+              body: `${puzzle.body}<br><br>❌ You're still missing ${missing.length} item(s). Keep exploring!`,
+              buttons: [
+                { label: 'Keep Looking', className: 'btn btn--ghost', onClick: (m) => m.close() }
+              ]
+            });
+            return;
+          }
+
+          // Has all items — escape!
+          puzzle.solved = true;
+          solvedPuzzles.add(puzzleId);
+          onGameWin();
+          return;
+        }
+
+        // Code puzzle
+        const modal = AJ.Modal.create({
+          title: puzzle.title,
+          body: `
+            ${puzzle.body}
+            <div style="margin-top: var(--space-4);">
+              <input
+                type="text"
+                id="puzzle-answer"
+                class="form-input puzzle-input"
+                placeholder="Enter code…"
+                maxlength="${puzzle.answer.length}"
+                autocomplete="off"
+              />
+            </div>
+          `,
+          buttons: [
+            {
+              label: '✅ Submit',
+              className: 'btn btn--success',
+              onClick: (m) => {
+                const input = document.getElementById('puzzle-answer');
+                const answer = (input ? input.value : '').trim().toUpperCase();
+
+                if (answer === puzzle.answer.toUpperCase()) {
+                  puzzle.solved = true;
+                  solvedPuzzles.add(puzzleId);
+
+                  if (puzzle.reward_item && !inventory.includes(puzzle.reward_item)) {
+                    inventory.push(puzzle.reward_item);
+                  }
+
+                  AJ.Sound.play('success');
+                  AJ.Toast.show(puzzle.reward_msg, 3500);
+                  AJ.Particles.spawn(window.innerWidth / 2, window.innerHeight / 2, 15, ['#10b981','#34d399','#fbbf24']);
+
+                  // Unlock exit room if both puzzles are solved
+                  if (solvedPuzzles.has('safe_code') && solvedPuzzles.has('box_code')) {
+                    // Add exit path from basement
+                    const basement = ROOMS.basement;
+                    if (!basement.exits.find(e => e.room === 'exit_room')) {
+                      basement.exits.push({ label: '🚪 Hidden Passage →', room: 'exit_room' });
+                      AJ.Toast.show('🗺️ The map reveals a hidden passage in the basement!', 4000);
+                    }
+                  }
+
+                  m.close();
+                  renderRoom();
+                  renderInventory();
+                } else {
+                  AJ.Sound.play('error');
+                  AJ.Toast.show('❌ Wrong code! Try again.');
+                  if (input) {
+                    input.value = '';
+                    input.focus();
+                    input.style.borderColor = 'var(--color-danger)';
+                    setTimeout(() => input.style.borderColor = '', 1000);
+                  }
+                }
+              }
+            },
+            { label: 'Cancel', className: 'btn btn--ghost', onClick: (m) => m.close() }
+          ],
+          closeOnBackdrop: true
+        });
+
+        // Focus the input
+        setTimeout(() => {
+          const input = document.getElementById('puzzle-answer');
+          if (input) input.focus();
+        }, 300);
+      }
+
+      /* ══════════════════════════════════════════════════════
+         NAVIGATION
+         ══════════════════════════════════════════════════════ */
+      function goToRoom(roomId) {
+        if (!ROOMS[roomId]) return;
+
+        // Transition effect
+        roomViewport.style.opacity = '0';
+        roomViewport.style.transform = 'scale(0.96)';
+
+        AJ.Sound.play('spooky');
+
+        setTimeout(() => {
+          currentRoom = roomId;
+          renderRoom();
+          renderInventory();
+
+          roomViewport.style.opacity = '1';
+          roomViewport.style.transform = 'scale(1)';
+        }, 300);
+      }
+
+      /* ══════════════════════════════════════════════════════
+         GAME WIN
+         ══════════════════════════════════════════════════════ */
+      function onGameWin() {
+        AJ.Sound.play('win');
+        AJ.Particles.spawn(window.innerWidth / 2, window.innerHeight / 2, 25, ['#10b981','#a855f7','#fbbf24','#06b6d4','#fff']);
+
+        setTimeout(() => {
+          AJ.Modal.create({
+            title: '🎉 You Escaped!',
+            body: `
+              The iron door swings open and moonlight floods in. You stumble out into the cool night air.
+              <br><br>
+              <strong>The haunted house is behind you now… or is it?</strong>
+              <br><br>
+              Items found: ${inventory.length} | Puzzles solved: ${solvedPuzzles.size}
+            `,
+            buttons: [
+              { label: 'Play Again', className: 'btn btn--purple', onClick: (m) => { m.close(); restartGame(); } },
+              { label: 'Back to Hub', className: 'btn btn--ghost', onClick: () => { window.location.href = 'games.html'; } }
+            ]
+          });
+        }, 600);
+      }
+
+      /* ══════════════════════════════════════════════════════
+         RESTART
+         ══════════════════════════════════════════════════════ */
+      function restartGame() {
+        currentRoom   = 'foyer';
+        inventory     = [];
+        foundObjects  = new Set();
+        solvedPuzzles = new Set();
+
+        // Reset puzzle state
+        Object.values(PUZZLES).forEach(p => p.solved = false);
+
+        // Reset basement exit
+        ROOMS.basement.exits = ROOMS.basement.exits.filter(e => e.room !== 'exit_room');
+
+        renderRoom();
+        renderInventory();
+        AJ.Toast.show('🏚️ The house resets around you…');
+      }
+
+      /* ══════════════════════════════════════════════════════
+         EVENT LISTENERS
+         ══════════════════════════════════════════════════════ */
+      restartBtn.addEventListener('click', () => {
+        AJ.Sound.play('click');
+        restartGame();
+      });
+
+      muteBtn.addEventListener('click', () => {
+        const muted = AJ.Sound.toggleMute();
+        muteBtn.textContent = muted ? '🔇' : '🔊';
+        AJ.Toast.show(muted ? 'Sound muted' : 'Sound enabled');
+      });
+
+      // Room viewport transition
+      roomViewport.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+
+      /* ══════════════════════════════════════════════════════
+         INIT
+         ══════════════════════════════════════════════════════ */
+      AJ.Nav.inject({
+        backHref: 'games.html',
+        backLabel: '← Games Hub'
+      });
+
+      renderRoom();
+      renderInventory();
+
+    })();
+  </script>
+</body>
+</html>

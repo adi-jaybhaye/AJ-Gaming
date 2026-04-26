@@ -3,793 +3,857 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Money Heist</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>Money Heist — AJ Gaming</title>
+  <meta name="description" content="Money Heist: Silent Grid — navigate the grid, dodge guards, avoid lasers, collect loot and reach the vault." />
+  <link rel="stylesheet" href="styles.css" />
+
   <style>
-    :focus { outline: 3px solid rgba(6,182,212,0.9); outline-offset: 3px; transition: outline-color .12s ease; }
-    /* tasteful focus ring only for keyboard (not mouse) */
-    body:not(.user-is-tabbing) :focus { outline: none; }
-    .user-is-tabbing :focus { outline: 3px solid rgba(6,182,212,0.95); outline-offset: 3px; }
-
-    /* accessible toast (single) */
-    #toast {
-      position: fixed;
-      left: 50%;
-      transform: translateX(-50%);
-      bottom: 24px;
-      background: rgba(0,0,0,0.75);
-      color: #fff;
-      padding: 8px 12px;
-      border-radius: 10px;
-      border: 1px solid rgba(255,255,255,0.06);
-      z-index: 120;
-      display: none;
-      min-width: 160px;
-      text-align: center;
+    /* ── Page-specific: Money Heist ──────────────────────────── */
+    :root {
+      --cell-size: 52px;
+      --grid-gap: 5px;
+      --mh-accent: var(--color-danger);
     }
 
-    /* live region visually hidden but available for SRs */
-    .sr-only {
-      position: absolute !important;
-      height: 1px; width: 1px;
-      overflow: hidden; clip: rect(1px, 1px, 1px, 1px);
-      white-space: nowrap; border: 0; padding: 0; margin: -1px;
+    .mh-bg {
+      position: fixed; inset: 0; z-index: -2;
+      background:
+        radial-gradient(1200px 600px at 50% 10%, rgba(239,68,68,0.04), transparent),
+        radial-gradient(800px 400px at 90% 90%, rgba(6,182,212,0.03), transparent),
+        linear-gradient(180deg, #070707 0%, #000 100%);
     }
 
-    /* reduced-motion class toggles */
-    body.reduced-motion * { animation: none !important; transition: none !important; }
-
-    /* better button hit area & contrast */
-    button, .dpad-btn { touch-action: manipulation; }
-    button[aria-disabled="true"] { opacity: 0.5; cursor: not-allowed; }
-
-    /* improved focus styles for the game board cells */
-    #game-board > div:focus {
-      transform: translateY(-3px) scale(1.02);
-      box-shadow: 0 12px 34px rgba(6,182,212,0.08);
-    }
-
-    /* modal improvements */
-    #register-panel[aria-hidden="false"] { pointer-events:auto; }
-    #register-panel[aria-hidden="true"] { pointer-events:none; }
-
-    :root{
-      --bg:#050505; --tile:#111217; --tile-edge:#2b2b2b;
-      --accent:#e53e3e; --accent-2:#06b6d4;
-      --cell-size:48px; --gap:6px;
-    }
-
-    body{
-      background: radial-gradient(1200px 600px at 50% 10%, rgba(255,50,50,0.03), transparent 10%),
-                  radial-gradient(800px 400px at 90% 90%, rgba(6,182,212,0.02), transparent 8%),
-                  linear-gradient(180deg, #070707 0%, #000000 100%);
-      min-height:100vh;
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
-    }
-
-    /* Game board: set exact cell sizing (overrides Tailwind w-12/h-12) */
-    #game-board{
+    /* ── Game Board ──────────────────────────────────────────── */
+    .mh-board {
       display: grid;
       grid-template-columns: repeat(8, var(--cell-size));
       grid-auto-rows: var(--cell-size);
-      gap: var(--gap);
-      margin-top: 6px;
-      margin-bottom: 2rem;
-      padding: 8px;
+      gap: var(--grid-gap);
+      padding: 10px;
       background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));
-      border-radius: 12px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.7), inset 0 -6px 30px rgba(0,0,0,0.4);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--color-border);
+      box-shadow: var(--shadow-lg), inset 0 -4px 20px rgba(0,0,0,0.3);
+      margin-bottom: var(--space-8);
+      position: relative;
     }
 
-    /* default tile look */
-    #game-board > div {
+    .mh-cell {
       width: var(--cell-size);
       height: var(--cell-size);
-      background: linear-gradient(180deg, var(--tile), #0b0b0f);
-      border-radius: 8px;
+      background: linear-gradient(180deg, var(--color-bg-surface), #0b0b0f);
+      border-radius: var(--radius-sm);
       border: 1px solid rgba(255,255,255,0.03);
-      display:flex; align-items:center; justify-content:center;
-      font-size: 1.1rem;
-      transition: transform .12s ease, box-shadow .15s ease, background.18s ease;
-      position:relative; user-select:none; -webkit-user-select:none; cursor: default;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      transition: transform 0.12s ease, box-shadow 0.15s ease, background 0.18s ease;
+      position: relative;
+      user-select: none;
+      -webkit-user-select: none;
+      cursor: default;
     }
 
-    #game-board > div::before{
-      content:''; position:absolute; inset:0; border-radius:8px;
-      box-shadow: inset 0 2px 6px rgba(255,255,255,0.02);
-      pointer-events:none;
+    .mh-cell::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: var(--radius-sm);
+      box-shadow: inset 0 2px 6px rgba(255,255,255,0.015);
+      pointer-events: none;
     }
 
-    #game-board > div:empty:hover{
-      transform: translateY(-4px);
-      box-shadow: 0 8px 20px rgba(0,0,0,0.6), 0 0 10px rgba(6,182,212,0.05);
-      background: linear-gradient(180deg, #0e0f14, #07070a);
+    .mh-cell--wall {
+      background: linear-gradient(180deg, #222, #111) !important;
+      box-shadow: inset 0 4px 12px rgba(0,0,0,0.6) !important;
+      border-color: rgba(0,0,0,0.4) !important;
     }
 
-    #game-board > div:not(:empty){
+    .mh-cell--occupied {
       transform: translateY(-2px);
-      box-shadow: 0 8px 26px rgba(0,0,0,0.6), 0 0 18px rgba(0,0,0,0.12);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.5);
       background: linear-gradient(180deg, #141416, #0b0b0d);
-      color: #f5f5f5; font-size: 1.4rem;
     }
 
-    #game-board > div:not(:empty)::after{
-      content:''; position:absolute; inset: -6px; border-radius: 12px;
-      background: radial-gradient(circle at 50% 30%, rgba(255,255,255,0.02), transparent 40%);
-      mix-blend-mode: screen; pointer-events:none; opacity:0.8;
+    /* ── Entities ─────────────────────────────────────────── */
+    .entity {
+      display: inline-block;
+      font-size: 1.3rem;
+      line-height: 1;
+      pointer-events: none;
+      transform-origin: center;
     }
 
-    @keyframes occupyPulse {
-      0% { transform: translateY(-2px) scale(1); box-shadow: 0 8px 26px rgba(0,0,0,0.6); }
-      50% { transform: translateY(-2px) scale(1.03); box-shadow: 0 14px 36px rgba(0,0,0,0.75), 0 0 18px rgba(229,62,62,0.06); }
-      100% { transform: translateY(-2px) scale(1); box-shadow: 0 8px 26px rgba(0,0,0,0.6); }
-    }
-    #game-board > div:not(:empty) { animation: occupyPulse 2.8s ease-in-out infinite; }
-
-    h1.text-4xl.font-bold { text-shadow: 0 6px 24px rgba(229,62,62,0.16); }
-    .mb-6.space-x-4 button {
-      box-shadow: 0 8px 30px rgba(0,0,0,0.6);
-      border: 1px solid rgba(255,255,255,0.03);
-      transition: transform .12s ease, box-shadow .12s ease;
-    }
-    .mb-6.space-x-4 button:hover { transform: translateY(-4px); }
-
-    @media (max-width:640px) {
-      :root { --cell-size:40px; --gap:5px; }
-      #game-board { padding:6px; border-radius:10px; }
-      #game-board > div { font-size:1.05rem; border-radius:7px; }
-      h1 { font-size:1.75rem; }
+    .entity--player {
+      filter: drop-shadow(0 6px 16px rgba(6,182,212,0.5));
+      animation: entityBob 2s ease-in-out infinite;
     }
 
-    @media (prefers-reduced-motion: reduce) {
-      #game-board > div, #game-board > div:not(:empty) {
-        animation: none !important; transition: none !important;
+    .entity--guard {
+      filter: drop-shadow(0 6px 16px rgba(239,68,68,0.5));
+      animation: entityGuard 1.5s ease-in-out infinite;
+    }
+
+    .entity--loot {
+      filter: drop-shadow(0 6px 14px rgba(251,191,36,0.45));
+      animation: entityFloat 1.4s ease-in-out infinite;
+    }
+
+    .entity--laser-on {
+      filter: drop-shadow(0 6px 18px rgba(255,0,0,0.6));
+      animation: entityPulse 0.8s infinite;
+    }
+
+    .entity--laser-off {
+      color: #666;
+      opacity: 0.7;
+    }
+
+    .entity--vault-locked {
+      filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));
+      color: #aaa;
+    }
+
+    .entity--vault-open {
+      filter: drop-shadow(0 8px 28px rgba(16,185,129,0.5));
+      animation: entityFloat 1s ease-in-out infinite;
+    }
+
+    @keyframes entityBob    { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+    @keyframes entityGuard  { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-2px) scale(1.04); } }
+    @keyframes entityFloat  { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-4px) scale(1.04); } }
+    @keyframes entityPulse  { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+
+    /* ── D-Pad ────────────────────────────────────────────── */
+    .dpad {
+      position: fixed;
+      right: 16px;
+      bottom: 80px;
+      display: grid;
+      grid-template-areas:
+        ".    up   ."
+        "left .    right"
+        ".    down .";
+      grid-template-columns: repeat(3, 48px);
+      grid-template-rows: repeat(3, 48px);
+      gap: 4px;
+      z-index: var(--z-overlay);
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .dpad__btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-md);
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--color-border);
+      color: var(--color-text-primary);
+      font-weight: 700;
+      font-size: var(--text-lg);
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: all var(--duration-fast) ease;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .dpad__btn:active {
+      transform: scale(0.9);
+      background: rgba(255,255,255,0.1);
+    }
+
+    .dpad__btn--up    { grid-area: up; }
+    .dpad__btn--down  { grid-area: down; }
+    .dpad__btn--left  { grid-area: left; }
+    .dpad__btn--right { grid-area: right; }
+
+    /* Hide D-pad on desktop */
+    @media (min-width: 769px) {
+      .dpad { display: none; }
+    }
+
+    /* ── Instructions Sheet ──────────────────────────────── */
+    .instr-sheet {
+      max-width: 900px;
+      width: 100%;
+      background: linear-gradient(180deg, var(--color-bg-elevated), var(--color-bg-base));
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      padding: var(--space-8);
+      box-shadow: var(--shadow-lg);
+      text-align: left;
+    }
+
+    .instr-sheet h2 {
+      font-family: var(--font-display);
+      font-size: var(--text-2xl);
+      color: var(--color-gold);
+      margin-bottom: var(--space-4);
+    }
+
+    .instr-sheet h3 {
+      font-size: var(--text-base);
+      color: var(--color-text-primary);
+      margin: var(--space-4) 0 var(--space-2);
+    }
+
+    .instr-cols {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: var(--space-6);
+      align-items: start;
+    }
+
+    .instr-sheet ul {
+      margin: var(--space-2) 0;
+      padding-left: var(--space-5);
+      color: var(--color-text-secondary);
+      line-height: 1.7;
+    }
+
+    .legend-grid {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    .legend-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .legend-icon {
+      width: 38px;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      border-radius: var(--radius-sm);
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--color-border);
+      flex-shrink: 0;
+    }
+
+    .legend-label {
+      font-size: var(--text-sm);
+      color: var(--color-text-secondary);
+    }
+
+    @media (max-width: 920px) {
+      .instr-cols { grid-template-columns: 1fr; }
+    }
+
+    /* ── Responsive Board ───────────────────────────────── */
+    @media (max-width: 640px) {
+      :root {
+        --cell-size: 40px;
+        --grid-gap: 4px;
       }
+      .mh-board { padding: 6px; }
+      .mh-cell  { font-size: 1.1rem; }
     }
-
-    .entity { display:inline-block; font-size:1.2rem; line-height:1; pointer-events:none; transform-origin:center; }
-    .entity.player { filter: drop-shadow(0 8px 18px rgba(6,182,212,0.45)); transition: transform .12s ease, filter .12s ease; }
-    .entity.guard { filter: drop-shadow(0 10px 20px rgba(229,62,62,0.55)); animation: guardPulse 1.6s ease-in-out infinite; }
-    .entity.loot { font-size:1.05rem; transform: translateY(-2px); filter: drop-shadow(0 8px 16px rgba(255,200,50,0.4)); animation: lootGlow 1.4s ease-in-out infinite; }
-    @keyframes lootGlow { 0% { transform: translateY(-2px) scale(1); } 50% { transform: translateY(-6px) scale(1.06); } 100% { transform: translateY(-2px) scale(1); } }
-    .entity.laser.off { color: #bdbdbd; opacity: 0.9; transform: translateY(-1px) scale(1); filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6)); }
-    .entity.laser.on { color: #fff; transform: translateY(-1px) scale(1.02); filter: drop-shadow(0 8px 20px rgba(255,0,0,0.7)); animation: laserPulse 0.9s infinite; }
-    @keyframes laserPulse { 0% { transform: translateY(-1px) scale(1); } 50% { transform: translateY(-3px) scale(1.04); } 100% { transform: translateY(-1px) scale(1); } }
-    .entity.vault.locked { filter: drop-shadow(0 6px 14px rgba(0,0,0,0.6)); color: #cfcfcf; }
-    .entity.vault.open { filter: drop-shadow(0 12px 36px rgba(0,200,140,0.45)); color: #003c2f; animation: vaultOpenGlow 1s ease-in-out infinite; }
-    @keyframes vaultOpenGlow { 0% { transform: translateY(0) scale(1); } 50% { transform: translateY(-4px) scale(1.03); } 100% { transform: translateY(0) scale(1); } }
-    #game-board > div.wall { background: linear-gradient(180deg,#2b2b2b,#111111); box-shadow: inset 0 4px 12px rgba(0,0,0,0.6); border: 1px solid rgba(0,0,0,0.6); }
-
-    /* --- Step 6 visuals: HUD buttons, D-pad & particles --- */
-    #hud { gap:14px; } #hud .best { color: #ffdca8; }
-    .hud-btn { display:inline-flex; align-items:center; justify-content:center; padding:6px 8px; gap:6px; border-radius:10px; cursor:pointer; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.04); }
-    .hud-btn:hover { transform: translateY(-3px); }
-    #dpad { position: fixed; right: 14px; bottom: 14px; width: 140px; height: 140px; display: grid; grid-template-columns: 44px 44px 44px; grid-template-rows: 44px 44px 44px; gap: 6px; place-items: center; z-index: 60; user-select: none; -webkit-user-select: none; }
-    .dpad-btn { width: 44px; height: 44px; border-radius: 10px; background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.18)); display:flex; align-items:center; justify-content:center; font-weight:700; color:#e6eef2; box-shadow: 0 10px 22px rgba(0,0,0,0.6); touch-action: none; }
-    .dpad-center { grid-column:2; grid-row:2; background:transparent; box-shadow:none; pointer-events:none; }
-    .particle { position: absolute; width: 8px; height: 8px; border-radius: 50%; pointer-events: none; transform-origin: center; animation: particlePop 700ms cubic-bezier(.2,.9,.3,1) forwards; will-change: transform, opacity; }
-    @keyframes particlePop { 0% { transform: translate(0,0) scale(1); opacity: 1; } 60% { transform: translate(var(--tx), var(--ty)) scale(1.2); opacity: 1; } 100% { transform: translate(calc(var(--tx) * 1.2), calc(var(--ty) * 1.2)) scale(0.4); opacity: 0; } }
-    /* simple toast for best time (kept above) */
-    /* small HUD control styles */
-    #hud .control { display:inline-flex; align-items:center; gap:8px; padding:6px 8px; background: rgba(255,255,255,0.02); border-radius:8px; border:1px solid rgba(255,255,255,0.03); }
-    #hud select, #hud input[type="range"] { background: rgba(0,0,0,0.35); color: #e6eef2; border: 1px solid rgba(255,255,255,0.04); padding:4px 6px; border-radius:6px; outline:none; }
-    #hud label { font-size:13px; color:#cbd5e1; }
-
-    /* instructions modal styles (kept) */
-    #instructions-panel { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(2,6,23,0.6); z-index: 200; opacity: 0; pointer-events: none; transition: opacity 240ms ease, transform 240ms ease; }
-    #instructions-panel.panel-open { opacity: 1; pointer-events: auto; }
-    #instructions-panel .sheet { width: min(920px, 94%); max-width: 920px; background: linear-gradient(180deg,#0b0f12, #071018); border-radius: 14px; padding: 20px; box-shadow: 0 20px 60px rgba(2,8,20,0.8); transform: translateY(8px) scale(.99); transition: transform 240ms ease; }
-    #instructions-panel.panel-open .sheet { transform: translateY(0) scale(1); }
-    .sheet h2 { margin:0 0 6px 0; font-size:1.35rem; color: #ffd76b; }
-    .sheet .cols { display:grid; grid-template-columns: 1fr 360px; gap:16px; align-items:start; }
-    .sheet .panel-left { font-size:0.95rem; color: #e6eef2; line-height:1.45; }
-    .sheet .panel-right { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06)); padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.03); }
-    .sheet ul { margin:8px 0 12px 18px; padding:0; color:#cbd5e1; } .sheet li { margin:6px 0; }
-    .legend { display:flex; flex-direction:column; gap:8px; } .legend .row { display:flex; gap:10px; align-items:center; } .legend .row .icon { width:34px; height:34px; display:inline-flex; align-items:center; justify-content:center; font-size:1.1rem; border-radius:8px; background: rgba(255,255,255,0.02); }
-    .sheet .actions { display:flex; gap:10px; justify-content:flex-end; margin-top:12px; } .sheet .actions button { padding:8px 12px; border-radius:8px; border:0; cursor:pointer; } .sheet .actions .close { background:#374151; color:#e6eef2; } .sheet .actions .start { background:#10b981; color:#001f14; }
-    @media (max-width:920px) { .sheet .cols { grid-template-columns: 1fr; } #instructions-panel .sheet { padding:14px; } }
-    #instructions-panel [tabindex]:focus, #instructions-panel button:focus { outline: 3px solid rgba(6,182,212,0.9); outline-offset: 3px; }
   </style>
 </head>
-<body class="bg-black text-white flex flex-col items-center min-h-screen p-6">
 
-  <h1 class="text-4xl font-bold text-red-500 mb-4 animate-pulse">Money Heist</h1>
+<body class="page-wrapper bg-dot-grid">
+  <div class="mh-bg" aria-hidden="true"></div>
 
-  <!-- Controls -->
-  <div class="mb-6 space-x-4">
-    <button id="restart-btn" class="bg-red-500 px-4 py-2 rounded hover:bg-red-600">Restart</button>
-    <button id="instructions-btn" class="bg-gray-700 px-4 py-2 rounded hover:bg-gray-800">Instructions</button>
-  </div>
+  <main class="page-main">
 
-  <!-- Game Grid Placeholder -->
-  <div id="game-board" class="grid grid-cols-8 gap-1" aria-label="Game board"></div>
+    <!-- Game Header -->
+    <header class="game-header animate-fade-in-up">
+      <h1 class="game-title" style="color: var(--color-danger);">Money Heist</h1>
+      <p class="game-subtitle">Silent Grid — collect loot, dodge guards, reach the vault</p>
+    </header>
 
-  <!-- D-Pad for Mobile (inserted directly after the game board) -->
-  <div id="dpad" aria-hidden="true">
-    <div class="dpad-btn" data-dir="up" role="button" tabindex="0">▲</div>
-    <div class="dpad-btn" data-dir="left" role="button" tabindex="0">◀</div>
-    <div class="dpad-btn" data-dir="right" role="button" tabindex="0">▶</div>
-    <div class="dpad-btn dpad-center"></div>
-    <div class="dpad-btn" data-dir="down" role="button" tabindex="0">▼</div>
-  </div>
+    <!-- HUD -->
+    <div class="hud animate-fade-in-up delay-1" id="hud">
+      <div class="hud__item">
+        <span class="hud__label">Loot</span>
+        <span class="hud__value hud__value--gold" id="hud-loot">0 / 0</span>
+      </div>
+      <div class="hud__item">
+        <span class="hud__label">Time</span>
+        <span class="hud__value hud__value--primary" id="hud-timer">0:00</span>
+      </div>
+      <div class="hud__item">
+        <span class="hud__label">Best</span>
+        <span class="hud__value hud__value--success" id="hud-best">--:--</span>
+      </div>
+      <div class="hud__item">
+        <span class="hud__label">Status</span>
+        <span class="hud__value" id="hud-status">🟢</span>
+      </div>
+    </div>
 
-  <!-- Instructions Modal (hidden by default) -->
-  <div id="instructions-panel" aria-hidden="true">
-    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="instr-title">
-      <h2 id="instr-title">How to play — Money Heist: Silent Grid</h2>
-      <div class="cols">
-        <div class="panel-left">
-          <p class="lead">Your objective: collect all the loot 💰 and reach the vault 🏦 without being caught by guards or stepping into active lasers.</p>
+    <!-- Controls -->
+    <div class="game-controls animate-fade-in-up delay-2">
+      <button class="btn btn--danger" id="restart-btn">🔄 Restart</button>
+      <button class="btn btn--ghost" id="pause-btn">⏸ Pause</button>
+      <button class="btn btn--ghost" id="instructions-btn">📖 How to Play</button>
+      <button class="btn btn--ghost btn--sm" id="mute-btn">🔊</button>
+    </div>
+
+    <!-- Game Board -->
+    <div class="mh-board animate-fade-in-scale delay-3" id="game-board" role="grid" aria-label="Money Heist game board"></div>
+
+    <!-- D-Pad (mobile only) -->
+    <div class="dpad" id="dpad" aria-label="Movement controls">
+      <button class="dpad__btn dpad__btn--up"    data-dir="up"    aria-label="Move up">▲</button>
+      <button class="dpad__btn dpad__btn--left"  data-dir="left"  aria-label="Move left">◀</button>
+      <button class="dpad__btn dpad__btn--right" data-dir="right" aria-label="Move right">▶</button>
+      <button class="dpad__btn dpad__btn--down"  data-dir="down"  aria-label="Move down">▼</button>
+    </div>
+
+  </main>
+
+  <!-- Instructions Modal -->
+  <div class="modal-overlay" id="instructions-modal">
+    <div class="instr-sheet" role="dialog" aria-modal="true" aria-labelledby="instr-title">
+      <h2 id="instr-title">How to Play — Money Heist: Silent Grid</h2>
+      <div class="instr-cols">
+        <div>
+          <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+            Collect all the loot 💰 and reach the vault 🏦 without being caught by guards or stepping into active lasers.
+          </p>
 
           <h3>Controls</h3>
           <ul>
             <li><strong>Arrow keys</strong> — move (desktop)</li>
-            <li><strong>Mobile D-pad</strong> — tap or hold to move</li>
-            <li><strong>Pause</strong> — freeze guards & lasers from HUD</li>
-            <li><strong>Mute</strong> — toggle SFX from HUD</li>
+            <li><strong>D-pad</strong> — tap or hold to move (mobile)</li>
+            <li><strong>P</strong> — Pause / Resume</li>
+            <li><strong>R</strong> — Restart level</li>
+            <li><strong>I</strong> — Toggle instructions</li>
           </ul>
 
-          <h3>Gameplay Rules</h3>
+          <h3>Rules</h3>
           <ul>
-            <li>Walls <em>(W)</em> block movement — you cannot pass through.</li>
-            <li>Loot <em>(💰)</em> disappears when collected. Collect all to unlock the vault.</li>
-            <li>Lasers <em>(🔴)</em> toggle on/off — stepping on an active laser = instant reset.</li>
-            <li>Guards patrol according to their paths. If they catch you, you reset to the start.</li>
-            <li>Reach the vault <em>(🏦)</em> after collecting all loot to clear the level.</li>
+            <li>Walls block movement — you cannot pass through.</li>
+            <li>Collect all loot 💰 to unlock the vault 🏦.</li>
+            <li>Lasers 🔴 toggle on/off — stepping on one while active = reset.</li>
+            <li>Guards patrol set paths. If they catch you, you start over.</li>
           </ul>
 
           <h3>Tips</h3>
           <ul>
-            <li>Watch patrol timing — move between gaps when guards turn away.</li>
-            <li>Use Pause to study laser timings or plan moves on mobile.</li>
-            <li>Collect loot near the vault last if guards patrol nearby.</li>
+            <li>Watch guard patrol timing and move in the gaps.</li>
+            <li>Use Pause to study laser timing.</li>
+            <li>Collect loot near the vault last if guards are nearby.</li>
           </ul>
-
-          <p class="muted" style="margin-top:10px; color:#9ca3af;">Accessible: this panel supports keyboard focus, Escape closes it, and screen-readers are announced automatically.</p>
         </div>
 
-        <aside class="panel-right">
-          <div style="display:flex; flex-direction:column; gap:12px;">
-            <div>
-              <strong>Legend</strong>
-              <div class="legend" style="margin-top:8px;">
-                <div class="row"><div class="icon">🕵️</div><div>Player — you</div></div>
-                <div class="row"><div class="icon">🛡</div><div>Guard — patrols</div></div>
-                <div class="row"><div class="icon">💰</div><div>Loot — collect</div></div>
-                <div class="row"><div class="icon">🔴</div><div>Laser (active)</div></div>
-                <div class="row"><div class="icon">🏦</div><div>Vault — open after all loot</div></div>
-                <div class="row"><div class="icon">W</div><div>Wall — blocks movement</div></div>
-              </div>
-            </div>
-
-            <div>
-              <strong>Quick Keys</strong>
-              <ul style="margin-top:6px;">
-                <li><kbd>I</kbd> — Open Instructions</li>
-                <li><kbd>R</kbd> — Restart level</li>
-                <li><kbd>P</kbd> — Pause/Resume</li>
-              </ul>
-            </div>
-
+        <aside style="padding: var(--space-4); background: rgba(255,255,255,0.02); border-radius: var(--radius-md); border: 1px solid var(--color-border);">
+          <strong style="color: var(--color-text-primary);">Legend</strong>
+          <div class="legend-grid" style="margin-top: var(--space-3);">
+            <div class="legend-row"><div class="legend-icon">🕵️</div><span class="legend-label">Player — you</span></div>
+            <div class="legend-row"><div class="legend-icon">🛡</div><span class="legend-label">Guard — patrols</span></div>
+            <div class="legend-row"><div class="legend-icon">💰</div><span class="legend-label">Loot — collect</span></div>
+            <div class="legend-row"><div class="legend-icon">🔴</div><span class="legend-label">Laser (active)</span></div>
+            <div class="legend-row"><div class="legend-icon">⬛</div><span class="legend-label">Wall — blocked</span></div>
+            <div class="legend-row"><div class="legend-icon">🏦</div><span class="legend-label">Vault — goal</span></div>
           </div>
         </aside>
       </div>
 
-      <div class="actions" style="margin-top:14px;">
-        <button class="close" id="instr-close">Close</button>
-        <button class="start" id="instr-start">Got it — Start</button>
+      <div style="display: flex; gap: var(--space-3); justify-content: flex-end; margin-top: var(--space-6);">
+        <button class="btn btn--ghost" id="instr-close">Close</button>
+        <button class="btn btn--success" id="instr-start">Got it — Start</button>
       </div>
     </div>
   </div>
 
-  <!-- Toast for feedback -->
-  <div id="toast" role="status" aria-live="polite" aria-atomic="true">Best time saved!</div>
-
-  <footer class="fixed bottom-0 left-0 w-full h-20  backdrop-blur-sm shadow-md py-3 text-center flex items-center justify-center text-white">
-    © 2025 | with ❤️ by ADITYA
+  <!-- Footer -->
+  <footer class="site-footer">
+    © 2025 AJ Gaming — Made with ❤️ by <a href="#">Aditya</a>
   </footer>
 
-  <!-- Accessible Live Region & Skip Link -->
-  <a href="#game-board" class="sr-only" id="skip-link">Skip to game board</a>
+  <!-- Accessible live region -->
   <div id="aria-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 
-</body>
+  <!-- Shared Utilities -->
+  <script src="shared.js"></script>
 
-<script>
-  /* ===== core grid setup ===== */
-  const gameBoard = document.getElementById('game-board');
-  const rows = 8;
-  const cols = 8;
+  <script>
+    (() => {
+      'use strict';
 
-  // ensure placeholder cleared then generate full grid cells
-  gameBoard.innerHTML = '';
-  for (let i = 0; i < rows * cols; i++) {
-    const cell = document.createElement('div');
-    // keep original Tailwind classes for compatibility but the CSS overrides sizes
-    cell.classList.add('w-12','h-12','bg-gray-900','border','border-gray-700','flex','items-center','justify-center');
-    gameBoard.appendChild(cell);
-  }
+      /* ══════════════════════════════════════════════════════
+         CONFIGURATION
+         ══════════════════════════════════════════════════════ */
+      const ROWS = 8;
+      const COLS = 8;
 
-  /* ===== ensure core game state declared BEFORE listeners/logic that depends on them ===== */
-  // player starts bottom-left
-  let playerPosition = { x: 0, y: rows - 1 };
+      // Map layout: W=wall, L=loot, Z=laser, V=vault, .=empty
+      const INITIAL_MAP = [
+        ['.','.','W','.','.','L','.','.'],
+        ['.','W','W','.','Z','.','W','.'],
+        ['.','.','.','.','W','.','.','L'],
+        ['.','L','.','W','.','.','W','.'],
+        ['.','.','.','.','.','Z','.','.'],
+        ['W','.','W','.','.','.','W','.'],
+        ['.','.','.','.','L','.','.','.'],
+        ['V','.','.','W','.','.','.','.']
+      ];
 
-  // guards initial (these will be overwritten by level loader when applicable)
-  let guards = [
-    { x: 4, y: 2, direction: 'right' },
-    { x: 6, y: 5, direction: 'left' }
-  ];
+      const INITIAL_GUARDS = [
+        { x: 4, y: 2, dir: 'right' },
+        { x: 6, y: 5, dir: 'left'  }
+      ];
 
-  // ===== STEP 4 BEHAVIOR: MAP, LASERS, LOOT, VAULT =====
-  // Map layout (8x8) -> 'W' wall, 'L' loot, 'Z' laser, 'V' vault, '.' empty
-  const mapLayout = [
-    ['.','.','W','.','.','L','.','.'],
-    ['.','W','W','.','Z','.','W','.'],
-    ['.','.','.','.','W','.','.','L'],
-    ['.','L','.','W','.','.','W','.'],
-    ['.','.','.','.','.','Z','.','.'],
-    ['W','.','W','.','.','.','W','.'],
-    ['.','.','.','.','L','.','.','.'],
-    ['V','.','.','W','.','.','.','.']
-  ];
+      const GUARD_SPEED    = 600;   // ms
+      const LASER_TOGGLE   = 1200;  // ms
 
-  let totalLoot = 0;
-  let collectedLoot = 0;
-  let vaultOpen = false;
+      /* ══════════════════════════════════════════════════════
+         STATE
+         ══════════════════════════════════════════════════════ */
+      let map            = [];
+      let guards         = [];
+      let lasers         = [];
+      let player         = { x: 0, y: ROWS - 1 };
+      let totalLoot      = 0;
+      let collectedLoot  = 0;
+      let vaultOpen      = false;
+      let paused         = false;
+      let gameOver        = false;
+      let startTime      = 0;
+      let elapsedSeconds  = 0;
+      let guardInterval   = null;
+      let laserInterval   = null;
+      let timerInterval   = null;
 
-  // gather lasers positions and initial state
-  const lasers = [];
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      if (mapLayout[r][c] === 'L') totalLoot++;
-      if (mapLayout[r][c] === 'Z') lasers.push({ r, c, active: false });
-    }
-  }
+      /* ══════════════════════════════════════════════════════
+         DOM CACHE
+         ══════════════════════════════════════════════════════ */
+      const boardEl      = document.getElementById('game-board');
+      const hudLoot      = document.getElementById('hud-loot');
+      const hudTimer     = document.getElementById('hud-timer');
+      const hudBest      = document.getElementById('hud-best');
+      const hudStatus    = document.getElementById('hud-status');
+      const restartBtn   = document.getElementById('restart-btn');
+      const pauseBtn     = document.getElementById('pause-btn');
+      const instrBtn     = document.getElementById('instructions-btn');
+      const instrModal   = document.getElementById('instructions-modal');
+      const instrClose   = document.getElementById('instr-close');
+      const instrStart   = document.getElementById('instr-start');
+      const muteBtn      = document.getElementById('mute-btn');
+      const dpad         = document.getElementById('dpad');
+      const ariaStatus   = document.getElementById('aria-status');
 
-  // toggle laser visuals and state (called by interval)
-  function toggleLasers() {
-    lasers.forEach(l => {
-      l.active = !l.active;
-      const idx = l.r * cols + l.c;
-      const cell = document.querySelectorAll('#game-board div')[idx];
-      if (!cell) return;
-      cell.classList.toggle('laser-on', l.active);
-      cell.classList.toggle('laser-off', !l.active);
-      const symbol = l.active ? '🔴' : '—';
-      if (!cell.innerHTML || cell.innerHTML.trim() === '') {
-        cell.innerHTML = `<span class="entity laser ${l.active ? 'on' : 'off'}">${symbol}</span>`;
-      }
-    });
-  }
+      let cells = []; // flat array of 64 cell elements
 
-  // start lasers toggling every second (stored on window for pause/resume control)
-  if (!window._laserInterval) window._laserInterval = setInterval(toggleLasers, 1000);
+      /* ══════════════════════════════════════════════════════
+         INITIALIZATION
+         ══════════════════════════════════════════════════════ */
+      function initGame() {
+        // Deep-copy map
+        map = INITIAL_MAP.map(row => [...row]);
 
-  /* ===== game rendering & logic ===== */
-  function renderGame() {
-    const cells = document.querySelectorAll('#game-board div');
-    cells.forEach(cell => {
-      cell.classList.remove('wall');
-      cell.innerHTML = '';
-    });
+        // Reset state
+        player        = { x: 0, y: ROWS - 1 };
+        guards        = INITIAL_GUARDS.map(g => ({ ...g }));
+        totalLoot     = 0;
+        collectedLoot = 0;
+        vaultOpen     = false;
+        gameOver       = false;
+        paused        = false;
+        startTime     = Date.now();
+        elapsedSeconds = 0;
 
-    if (typeof mapLayout !== 'undefined') {
-      cells.forEach((cell, index) => {
-        const r = Math.floor(index / cols);
-        const c = index % cols;
-        const tile = (mapLayout[r] && mapLayout[r][c]) ? mapLayout[r][c] : '.';
-
-        if (tile === 'W') {
-          cell.classList.add('wall');
-        } else if (tile === 'L') {
-          cell.innerHTML = '<span class="entity loot">💰</span>';
-        } else if (tile === 'Z') {
-          let active = false;
-          if (typeof lasers !== 'undefined') {
-            const found = lasers.find(l => l.r === r && l.c === c);
-            active = !!(found && found.active);
+        // Parse lasers & loot count
+        lasers = [];
+        for (let r = 0; r < ROWS; r++) {
+          for (let c = 0; c < COLS; c++) {
+            if (map[r][c] === 'L') totalLoot++;
+            if (map[r][c] === 'Z') lasers.push({ r, c, active: false });
           }
-          const stateClass = active ? 'on' : 'off';
-          const symbol = active ? '🔴' : '—';
-          cell.innerHTML = `<span class="entity laser ${stateClass}">${symbol}</span>`;
-        } else if (tile === 'V') {
-          const open = (typeof vaultOpen !== 'undefined') ? !!vaultOpen : false;
-          const vClass = open ? 'open' : 'locked';
-          cell.innerHTML = `<span class="entity vault ${vClass}">🏦</span>`;
+        }
+
+        // Build DOM cells (only once, then reuse)
+        if (cells.length === 0) {
+          boardEl.innerHTML = '';
+          for (let i = 0; i < ROWS * COLS; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'mh-cell';
+            boardEl.appendChild(cell);
+            cells.push(cell);
+          }
+        }
+
+        // Clear intervals
+        stopIntervals();
+
+        // Start intervals
+        guardInterval = setInterval(moveGuards, GUARD_SPEED);
+        laserInterval = setInterval(toggleLasers, LASER_TOGGLE);
+        timerInterval = setInterval(updateTimer, 1000);
+
+        // Update HUD
+        updateHUD();
+        updateBestDisplay();
+        hudStatus.textContent = '🟢';
+        pauseBtn.textContent = '⏸ Pause';
+
+        // Render
+        render();
+      }
+
+      function stopIntervals() {
+        clearInterval(guardInterval);
+        clearInterval(laserInterval);
+        clearInterval(timerInterval);
+        guardInterval = laserInterval = timerInterval = null;
+      }
+
+      /* ══════════════════════════════════════════════════════
+         RENDERING
+         ══════════════════════════════════════════════════════ */
+      function render() {
+        for (let r = 0; r < ROWS; r++) {
+          for (let c = 0; c < COLS; c++) {
+            const idx  = r * COLS + c;
+            const cell = cells[idx];
+            const tile = map[r][c];
+
+            // Reset
+            cell.className = 'mh-cell';
+            cell.innerHTML = '';
+
+            // Tile rendering
+            if (tile === 'W') {
+              cell.classList.add('mh-cell--wall');
+            } else if (tile === 'L') {
+              cell.classList.add('mh-cell--occupied');
+              cell.innerHTML = '<span class="entity entity--loot">💰</span>';
+            } else if (tile === 'Z') {
+              const laser = lasers.find(l => l.r === r && l.c === c);
+              const on = laser ? laser.active : false;
+              cell.classList.add('mh-cell--occupied');
+              cell.innerHTML = `<span class="entity entity--laser-${on ? 'on' : 'off'}">${on ? '🔴' : '⚫'}</span>`;
+            } else if (tile === 'V') {
+              cell.classList.add('mh-cell--occupied');
+              cell.innerHTML = `<span class="entity entity--vault-${vaultOpen ? 'open' : 'locked'}">🏦</span>`;
+            }
+          }
+        }
+
+        // Draw guards
+        guards.forEach(g => {
+          const idx = g.y * COLS + g.x;
+          cells[idx].classList.add('mh-cell--occupied');
+          cells[idx].innerHTML = '<span class="entity entity--guard">🛡</span>';
+        });
+
+        // Draw player (on top)
+        const pIdx = player.y * COLS + player.x;
+        cells[pIdx].classList.add('mh-cell--occupied');
+        cells[pIdx].innerHTML = '<span class="entity entity--player">🕵️</span>';
+      }
+
+      /* ══════════════════════════════════════════════════════
+         MOVEMENT
+         ══════════════════════════════════════════════════════ */
+      function attemptMove(dx, dy) {
+        if (paused || gameOver) return;
+
+        const nx = player.x + dx;
+        const ny = player.y + dy;
+
+        // Bounds check
+        if (nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) return;
+
+        // Wall check
+        if (map[ny][nx] === 'W') return;
+
+        player.x = nx;
+        player.y = ny;
+        AJ.Sound.play('click');
+
+        handlePlayerTile();
+        render();
+        checkGuardCollision();
+      }
+
+      function handlePlayerTile() {
+        const tile = map[player.y][player.x];
+
+        // Loot
+        if (tile === 'L') {
+          collectedLoot++;
+          map[player.y][player.x] = '.';
+          AJ.Sound.play('loot');
+          AJ.Particles.spawnAtElement(cells[player.y * COLS + player.x], 10, ['#fbbf24','#f59e0b','#fcd34d']);
+
+          if (collectedLoot >= totalLoot) {
+            vaultOpen = true;
+            AJ.Toast.show('🔓 Vault unlocked! Get to 🏦');
+          }
+          updateHUD();
+        }
+
+        // Laser (active)
+        const laser = lasers.find(l => l.r === player.y && l.c === player.x);
+        if (laser && laser.active) {
+          AJ.Sound.play('laser');
+          onPlayerCaught('💥 Zapped by a laser!');
+          return;
+        }
+
+        // Vault
+        if (tile === 'V') {
+          if (collectedLoot >= totalLoot) {
+            onVaultReached();
+          } else {
+            AJ.Toast.show(`🔐 Vault locked — collect ${totalLoot - collectedLoot} more loot`);
+          }
+        }
+      }
+
+      /* ══════════════════════════════════════════════════════
+         GUARDS
+         ══════════════════════════════════════════════════════ */
+      function moveGuards() {
+        if (paused || gameOver) return;
+
+        guards.forEach(g => {
+          let nextX = g.dir === 'right' ? g.x + 1 : g.x - 1;
+
+          // Wall-aware patrolling
+          if (nextX < 0 || nextX >= COLS || map[g.y][nextX] === 'W') {
+            g.dir = g.dir === 'right' ? 'left' : 'right';
+            nextX = g.dir === 'right' ? g.x + 1 : g.x - 1;
+            if (nextX < 0 || nextX >= COLS || map[g.y][nextX] === 'W') return; // stuck
+          }
+          g.x = nextX;
+        });
+
+        render();
+        checkGuardCollision();
+      }
+
+      function checkGuardCollision() {
+        const caught = guards.some(g => g.x === player.x && g.y === player.y);
+        if (caught) {
+          AJ.Sound.play('error');
+          onPlayerCaught('🚨 Caught by a guard!');
+        }
+      }
+
+      /* ══════════════════════════════════════════════════════
+         LASERS
+         ══════════════════════════════════════════════════════ */
+      function toggleLasers() {
+        if (paused || gameOver) return;
+        lasers.forEach(l => { l.active = !l.active; });
+        render();
+
+        // Check if player is standing on a now-active laser
+        const laserHere = lasers.find(l => l.r === player.y && l.c === player.x);
+        if (laserHere && laserHere.active) {
+          AJ.Sound.play('laser');
+          onPlayerCaught('💥 Laser activated under you!');
+        }
+      }
+
+      /* ══════════════════════════════════════════════════════
+         GAME OUTCOMES
+         ══════════════════════════════════════════════════════ */
+      function onPlayerCaught(msg) {
+        AJ.Toast.show(msg);
+        hudStatus.textContent = '🔴';
+
+        setTimeout(() => {
+          // Reset player position, keep loot progress (more forgiving)
+          player = { x: 0, y: ROWS - 1 };
+          hudStatus.textContent = '🟢';
+          render();
+        }, 600);
+      }
+
+      function onVaultReached() {
+        gameOver = true;
+        stopIntervals();
+        hudStatus.textContent = '🏆';
+
+        saveBestTime();
+        AJ.Sound.play('win');
+        AJ.Particles.spawn(window.innerWidth / 2, window.innerHeight / 2, 20, ['#fbbf24','#10b981','#06b6d4','#fff']);
+
+        setTimeout(() => {
+          AJ.Modal.create({
+            title: '🏆 Heist Complete!',
+            body: `You cracked the vault in <strong>${formatTime(elapsedSeconds)}</strong>! All loot secured.`,
+            buttons: [
+              { label: 'Play Again', className: 'btn btn--success', onClick: (m) => { m.close(); initGame(); } },
+              { label: 'Back to Hub', className: 'btn btn--ghost', onClick: () => { window.location.href = 'games.html'; } }
+            ]
+          });
+        }, 600);
+      }
+
+      /* ══════════════════════════════════════════════════════
+         HUD & TIMER
+         ══════════════════════════════════════════════════════ */
+      function updateHUD() {
+        hudLoot.textContent = `${collectedLoot} / ${totalLoot}`;
+      }
+
+      function updateTimer() {
+        if (paused || gameOver) return;
+        elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+        hudTimer.textContent = formatTime(elapsedSeconds);
+      }
+
+      function formatTime(s) {
+        return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+      }
+
+      function saveBestTime() {
+        const prev = AJ.Score.get('mh_best_time', 0);
+        if (!prev || elapsedSeconds < prev) {
+          AJ.Score.set('mh_best_time', elapsedSeconds);
+          AJ.Toast.show(`🎉 New best time: ${formatTime(elapsedSeconds)}!`, 3000);
+        }
+        updateBestDisplay();
+      }
+
+      function updateBestDisplay() {
+        const best = AJ.Score.get('mh_best_time', 0);
+        hudBest.textContent = best ? formatTime(best) : '--:--';
+      }
+
+      /* ══════════════════════════════════════════════════════
+         PAUSE
+         ══════════════════════════════════════════════════════ */
+      function togglePause() {
+        if (gameOver) return;
+        paused = !paused;
+
+        if (paused) {
+          stopIntervals();
+          pauseBtn.textContent = '▶ Resume';
+          hudStatus.textContent = '⏸';
+          AJ.Toast.show('Game paused');
+        } else {
+          guardInterval = setInterval(moveGuards, GUARD_SPEED);
+          laserInterval = setInterval(toggleLasers, LASER_TOGGLE);
+          timerInterval = setInterval(updateTimer, 1000);
+          pauseBtn.textContent = '⏸ Pause';
+          hudStatus.textContent = '🟢';
+          AJ.Toast.show('Game resumed');
+        }
+      }
+
+      /* ══════════════════════════════════════════════════════
+         INSTRUCTIONS MODAL
+         ══════════════════════════════════════════════════════ */
+      function openInstructions() {
+        instrModal.classList.add('is-open');
+        if (!paused && !gameOver) togglePause(); // auto-pause
+      }
+
+      function closeInstructions() {
+        instrModal.classList.remove('is-open');
+        if (paused) togglePause(); // auto-resume
+      }
+
+      instrBtn.addEventListener('click', openInstructions);
+      instrClose.addEventListener('click', closeInstructions);
+      instrStart.addEventListener('click', closeInstructions);
+      instrModal.addEventListener('click', (e) => { if (e.target === instrModal) closeInstructions(); });
+
+      /* ══════════════════════════════════════════════════════
+         INPUT HANDLING
+         ══════════════════════════════════════════════════════ */
+
+      // Keyboard
+      document.addEventListener('keydown', (e) => {
+        switch (e.key) {
+          case 'ArrowUp':    e.preventDefault(); attemptMove(0, -1); break;
+          case 'ArrowDown':  e.preventDefault(); attemptMove(0, 1);  break;
+          case 'ArrowLeft':  e.preventDefault(); attemptMove(-1, 0); break;
+          case 'ArrowRight': e.preventDefault(); attemptMove(1, 0);  break;
+          case 'p': case 'P': togglePause(); break;
+          case 'r': case 'R': initGame(); break;
+          case 'i': case 'I':
+            if (instrModal.classList.contains('is-open')) closeInstructions();
+            else openInstructions();
+            break;
+          case 'Escape':
+            if (instrModal.classList.contains('is-open')) closeInstructions();
+            break;
         }
       });
-    }
 
-    // Draw player (overwrites whatever is on that cell)
-    const playerIndex = playerPosition.y * cols + playerPosition.x;
-    const cellsArr = document.querySelectorAll('#game-board div');
-    if (cellsArr[playerIndex]) cellsArr[playerIndex].innerHTML = '<span class="entity player">🕵️‍♂️</span>';
+      // D-pad (touch + mouse, with hold-to-repeat)
+      let holdInterval = null;
+      const DIRS = {
+        up:    [0, -1],
+        down:  [0,  1],
+        left:  [-1, 0],
+        right: [1,  0]
+      };
 
-    // Draw guards
-    if (typeof guards !== 'undefined') {
-      guards.forEach(guard => {
-        const guardIndex = guard.y * cols + guard.x;
-        if (cellsArr[guardIndex]) cellsArr[guardIndex].innerHTML = '<span class="entity guard">🛡</span>';
+      function startHold(dir) {
+        const [dx, dy] = DIRS[dir];
+        attemptMove(dx, dy);
+        holdInterval = setInterval(() => attemptMove(dx, dy), 160);
+      }
+
+      function stopHold() {
+        clearInterval(holdInterval);
+        holdInterval = null;
+      }
+
+      dpad.querySelectorAll('.dpad__btn').forEach(btn => {
+        const dir = btn.dataset.dir;
+        btn.addEventListener('mousedown',  (e) => { e.preventDefault(); startHold(dir); });
+        btn.addEventListener('touchstart', (e) => { e.preventDefault(); startHold(dir); }, { passive: false });
+        btn.addEventListener('touchend',   (e) => { e.preventDefault(); stopHold(); }, { passive: false });
+        btn.addEventListener('touchcancel', stopHold);
       });
-    }
-  }
-
-  // initial render (single)
-  renderGame();
-
-  function checkCollision() {
-    guards.forEach(guard => {
-      if (guard.x === playerPosition.x && guard.y === playerPosition.y) {
-        showToast && showToast("🚨 You've been caught! Game Over. 🚨");
-        // reset player
-        playerPosition = { x: 0, y: rows - 1 };
-        // re-render after reset
-        renderGame();
-      }
-    });
-  }
-
-  function moveGuards() {
-    guards.forEach(guard => {
-      if (guard.direction === 'right') {
-        guard.x++;
-        if (guard.x >= cols - 1) guard.direction = 'left';
-      } else {
-        guard.x--;
-        if (guard.x <= 0) guard.direction = 'right';
-      }
-    });
-
-    checkCollision();
-    renderGame();
-  }
-
-  // ensure single guard interval stored on window
-  if (!window._guardIntervalId) window._guardIntervalId = setInterval(moveGuards, 500);
-
-  /* ===== movement attempts (wall blocking + interactions) ===== */
-  function attemptMove(dx, dy) {
-    const newX = playerPosition.x + dx;
-    const newY = playerPosition.y + dy;
-    if (newX < 0 || newX >= cols || newY < 0 || newY >= rows) return;
-    const tile = mapLayout[newY][newX];
-    if (tile === 'W') return;
-    playerPosition.x = newX;
-    playerPosition.y = newY;
-    handlePlayerMove();
-  }
-
-  function handlePlayerMove() {
-    const tile = mapLayout[playerPosition.y][playerPosition.x];
-
-    // LOOT
-    if (tile === 'L') {
-      collectedLoot++;
-      mapLayout[playerPosition.y][playerPosition.x] = '.';
-      // spawn particles & sfx if those funcs exist (keeps original logic)
-      if (typeof spawnLootParticlesAtCell === 'function') spawnLootParticlesAtCell(playerPosition.y, playerPosition.x);
-      if (typeof playSfx === 'function') playSfx('loot');
-    }
-
-    // LASER - check if active at this position
-    const laserHere = lasers.find(l => l.r === playerPosition.y && l.c === playerPosition.x);
-    if (laserHere && laserHere.active) {
-      showToast && showToast("💥 You stepped into an active laser! Game Over.");
-      if (typeof playSfx === 'function') playSfx('laser');
-      playerPosition = { x: 0, y: rows - 1 };
-      renderGame();
-      return;
-    }
-
-    // VAULT
-    if (tile === 'V') {
-      if (collectedLoot >= totalLoot) {
-        vaultOpen = true;
-        // call onVaultOpened if present
-        if (typeof onVaultOpened === 'function') onVaultOpened();
-        else { showToast && showToast("🏆 Vault opened — Heist success!"); }
-      } else {
-        showToast && showToast("🔐 Vault locked. Collect all loot first.");
-      }
-    }
-
-    renderGame();
-    checkCollision();
-  }
-
-  // single keydown listener (uses attemptMove)
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'ArrowUp') attemptMove(0, -1);
-    if (event.key === 'ArrowDown') attemptMove(0, 1);
-    if (event.key === 'ArrowLeft') attemptMove(-1, 0);
-    if (event.key === 'ArrowRight') attemptMove(1, 0);
-  });
-
-  /* ===== Step 6: Controls, Mute, Pause, Particles, Best-time ===== */
-  window._muted = !!window._muted;
-  window._paused = !!window._paused;
-  window._bestTimeKey = 'mh_best_time';
-
-  // enable HUD Pause button only if hud present
-  (function enablePauseToggle(){
-    const hud = document.getElementById('hud');
-    if (!hud) return;
-    if (document.getElementById('pause-btn')) return;
-    const pbtn = document.createElement('button');
-    pbtn.id = 'pause-btn';
-    pbtn.className = 'hud-btn';
-    pbtn.innerText = 'Pause';
-    pbtn.addEventListener('click', () => {
-      window._paused = !window._paused;
-      pbtn.innerText = window._paused ? 'Resume' : 'Pause';
-      if (window._paused) {
-        if (window._guardIntervalId) { clearInterval(window._guardIntervalId); window._guardIntervalId = null; }
-        if (window._laserInterval) { clearInterval(window._laserInterval); window._laserInterval = null; }
-      } else {
-        window._guardIntervalId = setInterval(moveGuards, 500);
-        window._laserInterval = setInterval(toggleLasers, 1000);
-      }
-    });
-    hud.appendChild(pbtn);
-  })();
-
-  // D-pad logic (hold-to-repeat)
-  (function enableDpad(){
-    const dpad = document.getElementById('dpad');
-    if (!dpad) return;
-    let holdInterval = null;
-    function startHold(dir) {
-      if (dir === 'up') attemptMove(0, -1);
-      if (dir === 'down') attemptMove(0, 1);
-      if (dir === 'left') attemptMove(-1, 0);
-      if (dir === 'right') attemptMove(1, 0);
-      holdInterval = setInterval(() => {
-        if (dir === 'up') attemptMove(0, -1);
-        if (dir === 'down') attemptMove(0, 1);
-        if (dir === 'left') attemptMove(-1, 0);
-        if (dir === 'right') attemptMove(1, 0);
-      }, 180);
-    }
-    function stopHold() { if (holdInterval) { clearInterval(holdInterval); holdInterval = null; } }
-    dpad.querySelectorAll('.dpad-btn[data-dir]').forEach(btn => {
-      const dir = btn.getAttribute('data-dir');
-      btn.addEventListener('mousedown', (e) => { e.preventDefault(); startHold(dir); });
       document.addEventListener('mouseup', stopHold);
-      btn.addEventListener('touchstart', (e) => { e.preventDefault(); startHold(dir); }, {passive:false});
-      btn.addEventListener('touchend', (e) => { e.preventDefault(); stopHold(); }, {passive:false});
-      btn.addEventListener('touchcancel', stopHold);
-    });
-  })();
 
-  function spawnLootParticlesAtCell(r,c) {
-    const idx = r * cols + c;
-    const cell = document.querySelectorAll('#game-board div')[idx];
-    if (!cell) return;
-    const rect = cell.getBoundingClientRect();
-    const parentRect = document.body.getBoundingClientRect();
-    const cx = rect.left + rect.width/2;
-    const cy = rect.top + rect.height/2;
-    const colors = ['#ffd76b','#ff9f1c','#ffd1dc','#fff59d'];
-    for (let i=0;i<10;i++){
-      const p = document.createElement('div');
-      p.className = 'particle';
-      const angle = (Math.random()*Math.PI*2);
-      const distance = 20 + Math.random()*30;
-      const tx = Math.cos(angle)*distance + 'px';
-      const ty = Math.sin(angle)*distance + 'px';
-      p.style.setProperty('--tx', tx);
-      p.style.setProperty('--ty', ty);
-      p.style.left = (cx - parentRect.left - 4) + 'px';
-      p.style.top = (cy - parentRect.top - 4) + 'px';
-      p.style.background = colors[Math.floor(Math.random()*colors.length)];
-      document.body.appendChild(p);
-      p.addEventListener('animationend', () => p.remove());
-    }
-  }
+      // Buttons
+      restartBtn.addEventListener('click', () => {
+        AJ.Sound.play('click');
+        initGame();
+      });
 
-  function saveBestTimeIfBetter() {
-    const started = window._startTime || Date.now();
-    const elapsed = Math.max(0, Math.floor((Date.now() - started)/1000)); // seconds
-    const prev = parseInt(localStorage.getItem(window._bestTimeKey) || '0', 10);
-    if (!prev || elapsed < prev) {
-      localStorage.setItem(window._bestTimeKey, String(elapsed));
-      const toast = document.getElementById('toast');
-      if (toast) {
-        toast.innerText = `New best time: ${Math.floor(elapsed/60)}:${String(elapsed%60).padStart(2,'0')}`;
-        toast.style.display = 'block';
-        setTimeout(()=> toast.style.display = 'none', 3500);
+      pauseBtn.addEventListener('click', () => {
+        AJ.Sound.play('click');
+        togglePause();
+      });
+
+      muteBtn.addEventListener('click', () => {
+        const muted = AJ.Sound.toggleMute();
+        muteBtn.textContent = muted ? '🔇' : '🔊';
+        AJ.Toast.show(muted ? 'Sound muted' : 'Sound enabled');
+      });
+
+      /* ══════════════════════════════════════════════════════
+         NAVIGATION & START
+         ══════════════════════════════════════════════════════ */
+      AJ.Nav.inject({
+        backHref: 'games.html',
+        backLabel: '← Games Hub'
+      });
+
+      // Start the game
+      initGame();
+
+      // Show instructions on first visit
+      if (!AJ.Score.get('mh_seen_instructions', false)) {
+        AJ.Score.set('mh_seen_instructions', true);
+        setTimeout(openInstructions, 500);
       }
-    }
-    const hud = document.getElementById('hud');
-    if (hud && !document.getElementById('best-time')) {
-      const span = document.createElement('div');
-      span.id = 'best-time';
-      span.className = 'best';
-      const val = localStorage.getItem(window._bestTimeKey);
-      span.innerText = `Best: ${val ? `${Math.floor(val/60)}:${String(val%60).padStart(2,'0')}` : '--:--'}`;
-      hud.appendChild(span);
-    } else if (hud) {
-      const val = localStorage.getItem(window._bestTimeKey);
-      const bt = document.getElementById('best-time');
-      if (bt) bt.innerText = `Best: ${val ? `${Math.floor(val/60)}:${String(val%60).padStart(2,'0')}` : '--:--'}`;
-    }
-  }
 
-  setTimeout(saveBestTimeIfBetter, 200);
-
-  // Attach restart button if present (safe)
-  const restartBtn = document.getElementById('restart-btn');
-  if (restartBtn) {
-    restartBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      // try calling restartGame if present, otherwise reset local state minimally
-      if (typeof restartGame === 'function') restartGame();
-      else {
-        // minimal in-place reset (keeps original content)
-        playerPosition = { x:0, y: rows -1 };
-        collectedLoot = 0;
-        // restore mapLayout from LEVELS if available (not adding features)
-        renderGame();
-      }
-    });
-  }
-
-  /* ===== Instructions panel wiring (keeps existing behavior) ===== */
-  (function setupInstructionsPanel() {
-    const panel = document.getElementById('instructions-panel');
-    if (!panel) return;
-    const instrBtn = document.getElementById('instructions-btn') || document.querySelectorAll('.mb-6.space-x-4 button')[1] || null;
-    const closeBtn = document.getElementById('instr-close');
-    const startBtn = document.getElementById('instr-start');
-
-    function getFocusable(el) {
-      return el.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])');
-    }
-
-    let lastFocused = null;
-    function openPanel() {
-      lastFocused = document.activeElement;
-      panel.classList.add('panel-open');
-      panel.setAttribute('aria-hidden','false');
-      const focusable = getFocusable(panel);
-      if (focusable.length) focusable[0].focus();
-      showToast && showToast('Instructions opened');
-      announceToScreenReader && announceToScreenReader('Instructions opened');
-      document.addEventListener('keydown', trapFocus);
-    }
-    function closePanel() {
-      panel.classList.remove('panel-open');
-      panel.setAttribute('aria-hidden','true');
-      document.removeEventListener('keydown', trapFocus);
-      if (lastFocused && lastFocused.focus) lastFocused.focus();
-      showToast && showToast('Instructions closed', 1200);
-      announceToScreenReader && announceToScreenReader('Instructions closed');
-    }
-    function trapFocus(e) {
-      if (e.key === 'Escape') { closePanel(); return; }
-      if (e.key !== 'Tab') return;
-      const focusable = Array.from(getFocusable(panel));
-      if (!focusable.length) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-    }
-
-    if (instrBtn) {
-      instrBtn.addEventListener('click', (e) => { e.preventDefault(); if (panel.classList.contains('panel-open')) closePanel(); else openPanel(); });
-      instrBtn.setAttribute('aria-haspopup','dialog');
-      instrBtn.setAttribute('aria-controls','instructions-panel');
-    } else {
-      console.warn('Instructions button not found; use "I" key to open.');
-    }
-
-    if (closeBtn) closeBtn.addEventListener('click', closePanel);
-    if (startBtn) startBtn.addEventListener('click', () => { closePanel(); showToast && showToast('Good luck — go silent!'); });
-
-    panel.addEventListener('click', (e) => { if (e.target === panel) closePanel(); });
-
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'i' || e.key === 'I') {
-        if (panel.classList.contains('panel-open')) closePanel(); else openPanel();
-      } else if (e.key === 'r' || e.key === 'R') {
-        if (typeof restartGame === 'function') restartGame();
-      } else if (e.key === 'p' || e.key === 'P') {
-        const pbtn = document.getElementById('pause-btn');
-        if (pbtn) pbtn.click();
-      }
-    });
-  })();
-
-  /* ===== UX / Accessibility helpers (tab detection, toast) ===== */
-  (function detectTabbing() {
-    function handleFirstTab(e) {
-      if (e.key === 'Tab') {
-        document.body.classList.add('user-is-tabbing');
-        window.removeEventListener('keydown', handleFirstTab);
-        window.addEventListener('mousedown', handleMouseDownOnce);
-      }
-    }
-    function handleMouseDownOnce() {
-      document.body.classList.remove('user-is-tabbing');
-      window.removeEventListener('mousedown', handleMouseDownOnce);
-      window.addEventListener('keydown', handleFirstTab);
-    }
-    window.addEventListener('keydown', handleFirstTab);
-  })();
-
-  function announceToScreenReader(msg) {
-    const aria = document.getElementById('aria-status');
-    if (aria) {
-      aria.textContent = '';
-      setTimeout(() => { aria.textContent = msg; }, 50);
-    }
-  }
-
-  function showToast(msg, ms = 2500) {
-    const t = document.getElementById('toast');
-    if (!t) { try { alert(msg); } catch (e) {} return; }
-    t.textContent = msg;
-    t.style.display = 'block';
-    t.setAttribute('aria-hidden','false');
-    announceToScreenReader(msg);
-    clearTimeout(t._hideTimer);
-    t._hideTimer = setTimeout(() => { t.style.display = 'none'; t.setAttribute('aria-hidden','true'); }, ms);
-  }
-
-  // Reduced motion toggle (only adds control if HUD exists)
-  (function reducedMotionControl() {
-    const hud = document.getElementById('hud');
-    if (!hud) return;
-    if (document.getElementById('reduced-motion-toggle')) return;
-    const wrap = document.createElement('div');
-    wrap.className = 'control';
-    wrap.innerHTML = `<label for="reduced-motion-toggle">Reduce motion</label><button id="reduced-motion-toggle" class="hud-btn" aria-pressed="false">Off</button>`;
-    hud.appendChild(wrap);
-    const btn = document.getElementById('reduced-motion-toggle');
-    const saved = localStorage.getItem('mh_reduced_motion');
-    if (saved === '1') { document.body.classList.add('reduced-motion'); btn.textContent = 'On'; btn.setAttribute('aria-pressed','true'); }
-    btn.addEventListener('click', () => {
-      const enabled = document.body.classList.toggle('reduced-motion');
-      btn.textContent = enabled ? 'On' : 'Off';
-      btn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
-      localStorage.setItem('mh_reduced_motion', enabled ? '1' : '0');
-      showToast(enabled ? 'Reduced motion enabled' : 'Reduced motion disabled');
-    });
-  })();
-
-  /* ===== FINAL INIT sanity call (keeps existing behavior) ===== */
-  (function gameInit() {
-    // sync lasers visuals once
-    if (typeof toggleLasers === 'function') {
-      try { toggleLasers(); } catch(e) {}
-      if (!window._laserInterval) window._laserInterval = setInterval(toggleLasers, 1000);
-    }
-
-    // ensure guard interval running
-    if (typeof moveGuards === 'function') {
-      if (!window._guardIntervalId) window._guardIntervalId = setInterval(moveGuards, 500);
-    }
-
-    // one initial render (already done but safe)
-    if (typeof renderGame === 'function') renderGame();
-
-    // resume audio on first interaction (best-effort)
-    function resumeAudioOnce() {
-      document.removeEventListener('click', resumeAudioOnce);
-      document.removeEventListener('keydown', resumeAudioOnce);
-      if (typeof audioCtx !== 'undefined' && audioCtx && audioCtx.state === 'suspended') {
-        audioCtx.resume && audioCtx.resume();
-      }
-    }
-    document.addEventListener('click', resumeAudioOnce);
-    document.addEventListener('keydown', resumeAudioOnce);
-
-    // hook restart button already done earlier; ensure console check
-    console.info('Game init complete. Map?', !!(typeof mapLayout !== 'undefined'), 'Lasers?', !!(typeof lasers !== 'undefined'), 'Guards?', !!(typeof guards !== 'undefined'));
-  })();
-</script>
+    })();
+  </script>
+</body>
 </html>
-
-

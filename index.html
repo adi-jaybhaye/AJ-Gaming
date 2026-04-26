@@ -2,268 +2,282 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>AJ Gaming</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-auth.js"></script>
-<script>
-  const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "your-project-id.firebaseapp.com",
-    projectId: "your-project-id",
-    storageBucket: "your-project-id.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
-  };
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AJ Gaming — Welcome</title>
+  <meta name="description" content="AJ Gaming — A curated collection of browser-based mini-games. Play Tic Tac Toe, Money Heist, and Haunted House Escape." />
+  <link rel="stylesheet" href="styles.css" />
 
-  firebase.initializeApp(firebaseConfig);
-</script>
+  <!-- Firebase Auth SDK (compat build for simple usage) -->
+  <!-- TODO: If you don't need auth, you can safely remove these two script tags -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.1/firebase-auth-compat.js"></script>
+
   <style>
-    body {
-  background: url('bg2.jpg');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  backdrop-filter: blur(3px);
-}
-
-/* ─── Custom Sprite + Animation ─────────────────────────────────── */
-.magician-sprite {
-  background: url('magician-spritesheet.png') no-repeat 0 0;
-  animation: playMagic 1s steps(8) infinite;
-}
-
-@keyframes playMagic {
-  from { background-position:    0    0; }
-  to   { background-position: -800px 0; }
-}
-
-/* ─── Utility Classes (if you need to predefine open-state) ─────── */
-/* Tailwind takes care of most styles; these are just helpers if desired */
-.panel-open {
-  opacity: 1 !important;
-  scale: 1 !important;
-  pointer-events: auto !important;
-}
-
-/* ─── Custom Sprite + Animation ─────────────────────────────────── */
-.magician-sprite {
-  background: url('magician-spritesheet.png') no-repeat 0 0;
-  animation: playMagic 1s steps(8) infinite;
-}
-
-@keyframes playMagic {
-  from { background-position:    0    0; }
-  to   { background-position: -800px 0; }
-}
-
-/* ─── Overlay Z-Index Fix ───────────────────────────────────────── */
-#register-panel {
-  /* ensure it sits above your login (z-20) */
-  z-index: 9999;
-}
-
-/* ─── Utility Classes (if you need to predefine open-state) ─────── */
-/* Tailwind takes care of most styles; these are just helpers if desired */
-.panel-open {
-  opacity: 1 !important;
-  scale: 1 !important;
-  pointer-events: auto !important;
-}
-
-
-    /* ==== ORBITING RINGS ==== */
-    /* .neon-ring {
-      --dist: 200px;        
-      --dur: 12s;            
-      position: absolute; top:50%; left:50%;
-      width: 260px; height:260px;
-      margin: -130px 0 0 -130px;
-      border-radius:50%;
-      background: conic-gradient(from 0deg, var(--c1), var(--c2), var(--c3));
-      opacity: 0.7; filter: blur(4px);
-      transform-origin: center center;
-      animation: orbit var(--dur) linear infinite;
-      will-change: transform;
+    /* ── Page-specific styles ───────────────────────────────── */
+    .login-bg {
+      position: fixed;
+      inset: 0;
+      background:
+        url('bg2.jpg') center / cover no-repeat,
+        var(--color-bg-deep);
+      z-index: -2;
     }
-    @keyframes orbit {
-      to {
-        transform: rotate(360deg) translateX(var(--dist)) rotate(-360deg);
-      }
-    } */
-    /* define per-ring colors & speeds */
-    /* .neon-ring:nth-child(1) { --c1:#f00; --c2:#0f0; --c3:#00f; --dist:180px; --dur:11s; }
-    .neon-ring:nth-child(2) { --c1:#ff0; --c2:#0ff; --c3:#f0f; --dist:220px; --dur:14s; }
-    .neon-ring:nth-child(3) { --c1:#0f0; --c2:#00f; --c3:#f00; --dist:200px; --dur:13s; } */
 
-    /* ==== CLICKABLE SHAPES ==== */
-    /* .click-dot, .click-square {
-      position:absolute; width:16px; height:16px;
-      border-radius:50%; background:#ff0080; cursor:pointer;
-      animation: float 3.5s ease-in-out infinite;
-      will-change: transform, opacity;
+    .login-bg::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(3, 3, 8, 0.65);
+      z-index: -1;
     }
-    .click-square { border-radius:4px; background:#00ff90; animation-delay:0.5s; }
-    .click-dot:nth-of-type(4) { top:25%; left:35%; animation-delay:0s; }
-    .click-dot:nth-of-type(5) { top:45%; left:25%; animation-delay:1s; }
-    .click-dot:nth-of-type(6) { top:30%; left:60%; animation-delay:2s; }
-    .click-square:nth-of-type(7) { top:60%; left:40%; animation-delay:1.2s; }
-    .click-square:nth-of-type(8) { top:20%; left:70%; animation-delay:2.2s; }
 
-    @keyframes float {
-      0%,100% { transform: translateY(0) scale(1); }
-      50%     { transform: translateY(-12px) scale(1.1); }
+    .login-card {
+      width: 100%;
+      max-width: 400px;
+      padding: var(--space-10);
+      position: relative;
+      z-index: 1;
     }
-    .clicked {
-      animation: clickPop 0.5s forwards;
-    }
-    @keyframes clickPop {
-      to { transform: scale(2) rotate(45deg); opacity:0; }
-    } */
 
-    /* ==== FORM GLOWS ==== */
-    .btn-glow:hover { box-shadow: 0 0 10px #00fff7, 0 0 40px #00fff7; }
-    .input-glow:focus {
-      box-shadow: 0 0 5px #00fff7; border-color: #00fff7;
+    .login-logo {
+      font-family: var(--font-display);
+      font-size: var(--text-3xl);
+      font-weight: 900;
+      text-align: center;
+      margin-bottom: var(--space-2);
+      letter-spacing: 2px;
     }
-    
+
+    .login-logo span {
+      color: var(--color-primary);
+    }
+
+    .login-tagline {
+      text-align: center;
+      color: var(--color-text-muted);
+      font-size: var(--text-sm);
+      margin-bottom: var(--space-8);
+    }
+
+    .login-divider {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      margin: var(--space-6) 0;
+      color: var(--color-text-muted);
+      font-size: var(--text-xs);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .login-divider::before,
+    .login-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--color-border);
+    }
+
+    /* ── Floating ambient orbs ──────────────────────────────── */
+    .ambient-orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: -1;
+      opacity: 0.4;
+    }
+
+    .ambient-orb--1 {
+      width: 300px; height: 300px;
+      background: var(--color-primary);
+      top: 10%; left: 15%;
+      animation: float 8s ease-in-out infinite;
+    }
+
+    .ambient-orb--2 {
+      width: 200px; height: 200px;
+      background: var(--color-purple);
+      bottom: 20%; right: 10%;
+      animation: float 6s ease-in-out infinite reverse;
+    }
   </style>
 </head>
-<body class="min-h-screen bg-black flex flex-col text-white relative">
 
-  <!-- Main Content (flex-grow pushes footer to bottom) -->
-  <main class="flex-grow flex items-center justify-center relative">
+<body class="page-wrapper bg-dot-grid">
+  <!-- Ambient background -->
+  <div class="login-bg" aria-hidden="true"></div>
+  <div class="ambient-orb ambient-orb--1" aria-hidden="true"></div>
+  <div class="ambient-orb ambient-orb--2" aria-hidden="true"></div>
 
-    <!-- Login Form -->
-    <div class="z-20 bg-black bg-opacity-70 p-8 rounded-2xl shadow-2xl w-80">
-      <h2 class="text-2xl font-bold mb-6 text-center text-cyan-400">Welcome To AJ's Gaming World</h2>
-      <form class="flex flex-col space-y-4" >
-  <input type="text" placeholder="Username"
-         class="input-glow w-full px-4 py-2 bg-transparent border border-cyan-400 rounded focus:outline-none" />
+  <!-- Main Content -->
+  <main class="page-main page-main--center">
 
-  <input type="password" placeholder="Password"
-         class="input-glow w-full px-4 py-2 bg-transparent border border-cyan-400 rounded focus:outline-none" />
+    <!-- Login Card -->
+    <div class="login-card glass-panel animate-fade-in-scale" id="login-card">
+      <div class="login-logo">🎮 <span>AJ</span> Gaming</div>
+      <p class="login-tagline">Enter your world of games</p>
 
-  <a href="games.html"  type="submit"  
-          class="btn-glow w-full bg-cyan-400 text-black font-bold py-2 rounded hover:bg-cyan-300 transition duration-300 text-center">
-    Enter Game
-      </a>      
-</form>
+      <form id="login-form" class="form-group" autocomplete="off">
+        <input
+          type="email"
+          id="login-email"
+          class="form-input"
+          placeholder="Email address"
+          required
+          autocomplete="email"
+        />
+        <input
+          type="password"
+          id="login-password"
+          class="form-input"
+          placeholder="Password"
+          required
+          autocomplete="current-password"
+        />
+        <button type="submit" id="login-submit" class="btn btn--primary btn--lg">
+          Enter Game
+        </button>
+      </form>
 
-      <p class="mt-4 text-center text-sm text-gray-400">
-        Don’t have an account?
-        <a href="#" id="register-btn" class="text-cyan-400 hover:underline">Register</a>
+      <div class="login-divider">or</div>
+
+      <!-- Quick play (skip login for development / when Firebase isn't configured) -->
+      <a href="games.html" id="quick-play-btn" class="btn btn--ghost btn--lg" style="width:100%;">
+        Play as Guest →
+      </a>
+
+      <p style="margin-top: var(--space-6); text-align: center; font-size: var(--text-sm); color: var(--color-text-muted);">
+        Don't have an account?
+        <a href="#" id="show-register" style="color: var(--color-primary); font-weight: 600;">Create one</a>
       </p>
-    </div>
-
-    <!-- ✅ Register Panel -->
-    <div id="register-panel"
-         class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 opacity-0 scale-95 pointer-events-none transition-opacity transition-transform duration-500 ease-out">
-      <div
-        class="relative bg-gray-800 p-8 rounded-2xl shadow-2xl w-80 transform scale-95 transition-transform duration-500 ease-out">
-        
-        <!-- Magician sprite -->
-        <div class="mx-auto mb-4 w-24 h-24 magician-sprite"></div>
-
-        <!-- Register Form -->
-        <form id="register-form" class="flex flex-col space-y-4">
-          <h2 class="text-2xl text-white font-bold text-center">Create Account</h2>
-          <input type="text" placeholder="Username" required
-                 class="px-4 py-2 rounded-md bg-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400" />
-          <input type="email" placeholder="Email" required
-                 class="px-4 py-2 rounded-md bg-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400" />
-          <input type="password" placeholder="Password" required
-                 class="px-4 py-2 rounded-md bg-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400" />
-          <button type="submit"
-                  class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-bold rounded-md transform hover:scale-105 transition">
-            Sign Up
-          </button>
-        </form>
-      </div>
     </div>
 
   </main>
 
-  <!-- 🔻 Footer at the Bottom -->
-  <footer class="fixed bottom-0 left-0 w-full h-20  backdrop-blur-sm shadow-md py-3 text-center flex items-center justify-center text-white">
-    © 2025 | with ❤️ by ADITYA
-  </footer>
-</body>
+  <!-- Register Modal -->
+  <div class="modal-overlay" id="register-modal">
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="register-title">
+      <div class="modal-title" id="register-title">Create Account</div>
+      <form id="register-form" class="form-group" style="text-align:left; margin-bottom: var(--space-6);">
+        <input type="text"     id="reg-username" class="form-input" placeholder="Username" required />
+        <input type="email"    id="reg-email"    class="form-input" placeholder="Email address" required autocomplete="email" />
+        <input type="password" id="reg-password" class="form-input" placeholder="Password (6+ characters)" required minlength="6" autocomplete="new-password" />
+        <button type="submit" class="btn btn--success btn--lg" style="width:100%;">Sign Up</button>
+      </form>
+      <button class="btn btn--ghost btn--sm" id="close-register" type="button">← Back to Login</button>
+    </div>
+  </div>
 
+  <!-- Footer -->
+  <footer class="site-footer">
+    © 2025 AJ Gaming — Made with ❤️ by <a href="#">Aditya</a>
+  </footer>
+
+  <!-- Shared Utilities -->
+  <script src="shared.js"></script>
 
   <script>
-  // ─── Grab elements AFTER DOM is loaded ─────────────────────────────
-  window.addEventListener('DOMContentLoaded', () => {
-    const showBtn = document.getElementById('register-btn');
-    const registerPan = document.getElementById('register-panel');
+    document.addEventListener('DOMContentLoaded', () => {
 
-    // ─── Toggle function ─────────────────────────────────────────────
-    function toggleRegisterPanel() {
-      registerPan.classList.toggle('opacity-0');
-      registerPan.classList.toggle('opacity-100');
-      registerPan.classList.toggle('scale-95');
-      registerPan.classList.toggle('scale-100');
-      registerPan.classList.toggle('pointer-events-none');
-      registerPan.classList.toggle('pointer-events-auto');
-    }
+      /* ── Elements ─────────────────────────────────────────── */
+      const loginForm      = document.getElementById('login-form');
+      const loginEmail     = document.getElementById('login-email');
+      const loginPassword  = document.getElementById('login-password');
+      const showRegister   = document.getElementById('show-register');
+      const closeRegister  = document.getElementById('close-register');
+      const registerModal  = document.getElementById('register-modal');
+      const registerForm   = document.getElementById('register-form');
+      const regEmail       = document.getElementById('reg-email');
+      const regPassword    = document.getElementById('reg-password');
 
-    // ─── Event listeners ─────────────────────────────────────────────
-    showBtn.addEventListener('click', e => {
-      e.preventDefault();
-      toggleRegisterPanel();
-    });
-
-    registerPan.addEventListener('click', e => {
-      if (e.target === registerPan) {
-        toggleRegisterPanel();
+      /* ── Register Modal Toggle ────────────────────────────── */
+      function openRegisterModal() {
+        registerModal.classList.add('is-open');
+        document.getElementById('reg-username').focus();
       }
+
+      function closeRegisterModal() {
+        registerModal.classList.remove('is-open');
+        showRegister.focus();
+      }
+
+      showRegister.addEventListener('click', (e) => {
+        e.preventDefault();
+        openRegisterModal();
+      });
+
+      closeRegister.addEventListener('click', closeRegisterModal);
+
+      registerModal.addEventListener('click', (e) => {
+        if (e.target === registerModal) closeRegisterModal();
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && registerModal.classList.contains('is-open')) {
+          closeRegisterModal();
+        }
+      });
+
+      /* ── Login Handler ────────────────────────────────────── */
+      loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email    = loginEmail.value.trim();
+        const password = loginPassword.value;
+
+        if (!email || !password) {
+          AJ.Toast.show('⚠️ Please fill in all fields');
+          return;
+        }
+
+        // If Firebase is configured, attempt real auth
+        if (AJ.Auth.isConfigured()) {
+          try {
+            await AJ.Auth.login(email, password);
+            AJ.Toast.show('✅ Login successful!');
+            AJ.Sound.play('success');
+            setTimeout(() => window.location.href = 'games.html', 800);
+          } catch (err) {
+            AJ.Toast.show('❌ ' + err.message, 3500);
+            AJ.Sound.play('error');
+          }
+        } else {
+          // Dev mode: just let them in with a toast
+          AJ.Toast.show('🎮 Welcome! (Auth not configured — entering as guest)');
+          AJ.Sound.play('success');
+          setTimeout(() => window.location.href = 'games.html', 1000);
+        }
+      });
+
+      /* ── Register Handler ─────────────────────────────────── */
+      registerForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email    = regEmail.value.trim();
+        const password = regPassword.value;
+
+        if (!email || !password) {
+          AJ.Toast.show('⚠️ Please fill in all fields');
+          return;
+        }
+
+        if (AJ.Auth.isConfigured()) {
+          try {
+            await AJ.Auth.register(email, password);
+            AJ.Toast.show('✅ Account created! You can now log in.');
+            AJ.Sound.play('success');
+            registerForm.reset();
+            setTimeout(closeRegisterModal, 1200);
+          } catch (err) {
+            AJ.Toast.show('❌ ' + err.message, 3500);
+            AJ.Sound.play('error');
+          }
+        } else {
+          AJ.Toast.show('⚙️ Firebase not configured. Add your API keys to shared.js');
+          AJ.Sound.play('error');
+        }
+      });
+
     });
-  });
-
-  document.addEventListener("DOMContentLoaded", () => {
-    // Firebase setup
-    const auth = firebase.auth();
-
-    // Login
-    document.getElementById("login-form").addEventListener("submit", (e) => {
-      e.preventDefault();
-      const email = document.getElementById("username").value;
-      const password = document.getElementById("password").value;
-
-      auth.signInWithEmailAndPassword(email, password)
-        .then(() => {
-          alert("✅ Login successful!");
-          // 🚀 Redirect to games.html
-         window.location.href ="games.html";
-        })
-        .catch((error) => {
-          alert("❌ Login error: " + error.message);
-        });
-    });
-
-    // Register
-    document.getElementById("register-form").addEventListener("submit", (e) => {
-      e.preventDefault();
-      const email = document.getElementById("reg-username").value;
-      const password = document.getElementById("reg-password").value;
-
-      auth.createUserWithEmailAndPassword(email, password)
-        .then(() => {
-          alert("✅ Registration successful!");
-          document.getElementById("register-form").reset();
-          // Optional: Close the panel or switch back to login
-        })
-        .catch((error) => {
-          alert("❌ Registration error: " + error.message);
-        });
-    });
-  });
-</script>
-
+  </script>
 </body>
 </html>
-
-
-
-

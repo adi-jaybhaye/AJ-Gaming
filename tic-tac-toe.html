@@ -1,205 +1,537 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Flashy Tic Tac Toe</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tic Tac Toe — AJ Gaming</title>
+  <meta name="description" content="Play Tic Tac Toe against a friend or challenge the AI. Part of AJ Gaming." />
+  <link rel="stylesheet" href="styles.css" />
+
   <style>
-  body {
-  background-color: #0a0a0a;
-  color: #fff;
-  font-family: 'Segoe UI', sans-serif;
-  display: flex;
-  justify-content: center; /* horizontal center */
-  align-items: center;     /* vertical center */
-  min-height: 100vh;       /* full viewport height */
-  margin: 0;
-}
+    /* ── Page-specific: Tic Tac Toe ──────────────────────────── */
 
-.tictactoe-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center; /* center children horizontally */
-  text-align: center;
-}
-
-
-  .game-title {
-    font-size: 2.5rem;
-    font-weight: bold;
-    margin-bottom: 20px;
-    color: #ff006e;
-    text-shadow: 0 0 10px #ff006e, 0 0 20px #ff4fa3, 0 0 40px #ff80c1;
-    animation: pulse 1.5s infinite;
-  }
-
-  @keyframes pulse {
-    0%, 100% { text-shadow: 0 0 10px #ff006e, 0 0 20px #ff4fa3, 0 0 40px #ff80c1; }
-    50% { text-shadow: 0 0 20px #ff4fa3, 0 0 40px #ff80c1, 0 0 60px #ffc2df; }
-  }
-
-  .player-turn {
-    font-size: 1.2rem;
-    margin-bottom: 15px;
-    color: #00f5d4;
-    text-shadow: 0 0 8px #00f5d4, 0 0 16px #29ffd4;
-  }
-
-  .board {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(3, 1fr);
-  gap: 10px;
-  width: 90vmin; /* responsive size based on viewport */
-  max-width: 400px; /* never too big */
-  aspect-ratio: 1 / 1; /* always a perfect square */
-  margin-bottom: 20px;
-}
-
-.cell {
-  background-color: #111;
-  border: 2px solid #333;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(2rem + 1vw); /* scales with screen */
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  color: white;
-  text-shadow: 0 0 10px transparent;
-  border-radius: 10px; /* soft corners for arcade vibe */
-}
-
-
-  .cell:hover {
-    border-color: #ffbe0b;
-    box-shadow: 0 0 10px #ffbe0b, 0 0 20px #ffbe0b;
-  }
-
-  .cell.x {
-    color: #ff006e;
-    text-shadow: 0 0 10px #ff006e, 0 0 20px #ff4fa3, 0 0 40px #ff80c1;
-  }
-
-  .cell.o {
-    color: #00f5d4;
-    text-shadow: 0 0 10px #00f5d4, 0 0 20px #29ffd4, 0 0 40px #5efff1;
-  }
-
-  .reset-btn {
-    background: none;
-    color: #fff;
-    padding: 10px 20px;
-    border: 2px solid #ffbe0b;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 1rem;
-    text-shadow: 0 0 5px #ffbe0b;
-    transition: all 0.3s ease;
-  }
-
-  .reset-btn:hover {
-    background: #ffbe0b;
-    color: black;
-    box-shadow: 0 0 10px #ffbe0b, 0 0 20px #ffbe0b;
-  }
-  @keyframes winPulse {
-    0% { transform: scale(1); text-shadow: 0 0 10px yellow; }
-    50% { transform: scale(1.2); text-shadow: 0 0 20px yellow, 0 0 30px orange; }
-    100% { transform: scale(1); text-shadow: 0 0 10px yellow; }
-  }
-</style>
-
-</head>
-<body class="bg-black text-white flex flex-col items-center min-h-screen justify-center">
-
-  <div class="tictactoe-container">
-    <h1 class="game-title"> Tic Tac Toe Showdown</h1>
-    
-    <div class="player-turn">Player <span id="current-player">X</span>'s Turn</div>
-    
-    <div class="board" id="board">
-      <div class="cell" data-cell></div>
-      <div class="cell" data-cell></div>
-      <div class="cell" data-cell></div>
-      <div class="cell" data-cell></div>
-      <div class="cell" data-cell></div>
-      <div class="cell" data-cell></div>
-      <div class="cell" data-cell></div>
-      <div class="cell" data-cell></div>
-      <div class="cell" data-cell></div>
-    </div>
-
-    <button id="reset-btn" class="reset-btn">🔄 Restart Game</button>
-  </div>
-<script>
-  const board = document.getElementById('board');
-  const cells = document.querySelectorAll('[data-cell]');
-  const currentPlayerSpan = document.getElementById('current-player');
-  const resetBtn = document.getElementById('reset-btn');
-
-  let currentPlayer = 'X';
-  let gameActive = true;
-
-  const winningCombinations = [
-    [0,1,2],[3,4,5],[6,7,8], // rows
-    [0,3,6],[1,4,7],[2,5,8], // cols
-    [0,4,8],[2,4,6]          // diagonals
-  ];
-
-  function handleCellClick(e) {
-    const cell = e.target;
-    if (cell.textContent !== '' || !gameActive) return;
-
-    cell.textContent = currentPlayer;
-    cell.classList.add(currentPlayer.toLowerCase());
-
-    if (checkWin(currentPlayer)) {
-      gameActive = false;
-      currentPlayerSpan.textContent = `${currentPlayer} Wins! 🏆`;
-      highlightWin(currentPlayer);
-    } else if (isDraw()) {
-      gameActive = false;
-      currentPlayerSpan.textContent = `Draw! 🤝`;
-    } else {
-      currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
-      currentPlayerSpan.textContent = currentPlayer;
+    .ttt-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 520px;
     }
-  }
 
-  function checkWin(player) {
-    return winningCombinations.some(combination => {
-      return combination.every(index => cells[index].textContent === player);
-    });
-  }
+    /* ── Turn Indicator ────────────────────────────────────── */
+    .turn-indicator {
+      font-size: var(--text-lg);
+      font-weight: 600;
+      margin-bottom: var(--space-6);
+      padding: var(--space-2) var(--space-5);
+      border-radius: var(--radius-full);
+      background: rgba(255,255,255, 0.03);
+      border: 1px solid var(--color-border);
+      transition: all var(--duration-base) ease;
+    }
 
-  function isDraw() {
-    return [...cells].every(cell => cell.textContent !== '');
-  }
+    .turn-indicator--x { color: var(--color-primary); border-color: rgba(6,182,212,0.2); }
+    .turn-indicator--o { color: var(--color-danger);   border-color: rgba(239,68,68,0.2); }
 
-  function highlightWin(player) {
-    winningCombinations.forEach(combination => {
-      if (combination.every(index => cells[index].textContent === player)) {
-        combination.forEach(index => {
-          cells[index].style.animation = 'winPulse 0.7s ease infinite alternate';
+    /* ── Board ─────────────────────────────────────────────── */
+    .ttt-board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 8px;
+      width: min(90vw, 380px);
+      aspect-ratio: 1 / 1;
+      margin-bottom: var(--space-8);
+      padding: 10px;
+      background: rgba(255,255,255, 0.02);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--color-border);
+    }
+
+    .ttt-cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--color-bg-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      font-size: clamp(2rem, 8vw, 3.5rem);
+      font-weight: 800;
+      cursor: pointer;
+      transition: all var(--duration-fast) var(--ease-out);
+      user-select: none;
+      -webkit-user-select: none;
+      color: transparent;
+      position: relative;
+    }
+
+    .ttt-cell:hover:not(.ttt-cell--taken):not(.ttt-cell--disabled) {
+      border-color: var(--color-gold);
+      background: rgba(255,255,255, 0.04);
+      transform: scale(1.03);
+      box-shadow: 0 0 16px rgba(251, 191, 36, 0.15);
+    }
+
+    .ttt-cell--x {
+      color: var(--color-primary);
+      text-shadow: 0 0 14px var(--color-primary-glow);
+    }
+
+    .ttt-cell--o {
+      color: var(--color-danger);
+      text-shadow: 0 0 14px var(--color-danger-glow);
+    }
+
+    .ttt-cell--taken {
+      cursor: default;
+    }
+
+    .ttt-cell--disabled {
+      cursor: default;
+      opacity: 0.6;
+    }
+
+    .ttt-cell--win {
+      animation: cellWin 0.6s ease-in-out infinite alternate;
+      border-color: var(--color-gold) !important;
+    }
+
+    @keyframes cellWin {
+      from { transform: scale(1);    box-shadow: 0 0 10px var(--color-gold-glow); }
+      to   { transform: scale(1.06); box-shadow: 0 0 24px var(--color-gold-glow), 0 0 48px rgba(251,191,36,0.1); }
+    }
+
+    @keyframes cellPlace {
+      from { transform: scale(0.5);  opacity: 0.3; }
+      to   { transform: scale(1);    opacity: 1; }
+    }
+
+    .ttt-cell--placed {
+      animation: cellPlace 0.2s var(--ease-spring) both;
+    }
+
+    /* ── Mode Selector ─────────────────────────────────────── */
+    .mode-selector {
+      display: flex;
+      gap: 2px;
+      background: rgba(255,255,255, 0.03);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 3px;
+      margin-bottom: var(--space-6);
+    }
+
+    .mode-selector__btn {
+      padding: var(--space-2) var(--space-4);
+      font-family: var(--font-body);
+      font-size: var(--text-sm);
+      font-weight: 500;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      background: transparent;
+      color: var(--color-text-muted);
+      transition: all var(--duration-fast) ease;
+    }
+
+    .mode-selector__btn:hover {
+      color: var(--color-text-primary);
+    }
+
+    .mode-selector__btn--active {
+      background: var(--color-primary);
+      color: var(--color-text-inverse);
+      font-weight: 600;
+    }
+
+    /* ── Score display ─────────────────────────────────────── */
+    .ttt-scores {
+      display: flex;
+      gap: var(--space-4);
+      margin-bottom: var(--space-4);
+    }
+
+    @media (max-width: 480px) {
+      .ttt-board {
+        gap: 6px;
+        padding: 8px;
+      }
+    }
+  </style>
+</head>
+
+<body class="page-wrapper bg-gaming bg-dot-grid">
+
+  <main class="page-main page-main--center">
+    <div class="ttt-wrapper">
+
+      <!-- Game Header -->
+      <header class="game-header animate-fade-in-up">
+        <h1 class="game-title" style="color: var(--color-primary);">Tic Tac Toe</h1>
+        <p class="game-subtitle">Classic showdown — outsmart your opponent</p>
+      </header>
+
+      <!-- Mode Selector -->
+      <div class="mode-selector animate-fade-in-up delay-1" id="mode-selector" role="radiogroup" aria-label="Game mode">
+        <button class="mode-selector__btn mode-selector__btn--active" data-mode="pvp" role="radio" aria-checked="true">
+          👥 vs Player
+        </button>
+        <button class="mode-selector__btn" data-mode="ai" role="radio" aria-checked="false">
+          🤖 vs AI
+        </button>
+      </div>
+
+      <!-- Score HUD -->
+      <div class="ttt-scores animate-fade-in-up delay-2">
+        <div class="hud__item">
+          <span class="hud__label">X Wins</span>
+          <span class="hud__value hud__value--primary" id="score-x">0</span>
+        </div>
+        <div class="hud__item">
+          <span class="hud__label">Draws</span>
+          <span class="hud__value" id="score-draws">0</span>
+        </div>
+        <div class="hud__item">
+          <span class="hud__label">O Wins</span>
+          <span class="hud__value hud__value--danger" id="score-o">0</span>
+        </div>
+      </div>
+
+      <!-- Turn Indicator -->
+      <div class="turn-indicator turn-indicator--x animate-fade-in-up delay-3" id="turn-indicator">
+        Player <span id="current-player">X</span>'s Turn
+      </div>
+
+      <!-- Board -->
+      <div class="ttt-board animate-fade-in-scale delay-3" id="board" role="grid" aria-label="Tic Tac Toe board">
+        <!-- Cells generated by JS -->
+      </div>
+
+      <!-- Controls -->
+      <div class="game-controls animate-fade-in-up delay-4">
+        <button class="btn btn--gold" id="restart-btn">🔄 New Game</button>
+        <button class="btn btn--ghost" id="reset-scores-btn">Reset Scores</button>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    © 2025 AJ Gaming — Made with ❤️ by <a href="#">Aditya</a>
+  </footer>
+
+  <!-- Shared Utilities -->
+  <script src="shared.js"></script>
+
+  <script>
+    (() => {
+      'use strict';
+
+      /* ── Constants ──────────────────────────────────────────── */
+      const WINNING_COMBOS = [
+        [0,1,2],[3,4,5],[6,7,8],  // rows
+        [0,3,6],[1,4,7],[2,5,8],  // cols
+        [0,4,8],[2,4,6]           // diags
+      ];
+
+      /* ── State ──────────────────────────────────────────────── */
+      let board = Array(9).fill('');
+      let currentPlayer = 'X';
+      let gameActive = true;
+      let mode = 'pvp'; // 'pvp' or 'ai'
+      let scores = AJ.Score.get('ttt_scores', { x: 0, o: 0, draws: 0 });
+
+      /* ── DOM ────────────────────────────────────────────────── */
+      const boardEl        = document.getElementById('board');
+      const turnIndicator  = document.getElementById('turn-indicator');
+      const currentPlayerSpan = document.getElementById('current-player');
+      const restartBtn     = document.getElementById('restart-btn');
+      const resetScoresBtn = document.getElementById('reset-scores-btn');
+      const scoreXEl       = document.getElementById('score-x');
+      const scoreOEl       = document.getElementById('score-o');
+      const scoreDrawsEl   = document.getElementById('score-draws');
+      const modeSelector   = document.getElementById('mode-selector');
+
+      // Cache cell elements
+      let cells = [];
+
+      /* ── Init Board ─────────────────────────────────────────── */
+      function createBoard() {
+        boardEl.innerHTML = '';
+        cells = [];
+        for (let i = 0; i < 9; i++) {
+          const cell = document.createElement('div');
+          cell.className = 'ttt-cell';
+          cell.setAttribute('role', 'gridcell');
+          cell.setAttribute('aria-label', `Cell ${Math.floor(i/3)+1},${(i%3)+1}`);
+          cell.setAttribute('tabindex', '0');
+          cell.dataset.index = i;
+          cell.addEventListener('click', () => handleCellClick(i));
+          cell.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              handleCellClick(i);
+            }
+          });
+          boardEl.appendChild(cell);
+          cells.push(cell);
+        }
+      }
+
+      /* ── Game Logic ─────────────────────────────────────────── */
+      function handleCellClick(index) {
+        if (!gameActive || board[index] !== '') return;
+        if (mode === 'ai' && currentPlayer === 'O') return; // block during AI turn
+
+        placeMarker(index, currentPlayer);
+
+        const winner = checkWin();
+        if (winner) {
+          endGame(winner);
+          return;
+        }
+        if (isDraw()) {
+          endGame('draw');
+          return;
+        }
+
+        switchPlayer();
+
+        // AI move
+        if (mode === 'ai' && currentPlayer === 'O' && gameActive) {
+          // Short delay for natural feel
+          setBoardDisabled(true);
+          setTimeout(() => {
+            const aiIndex = getAiMove();
+            placeMarker(aiIndex, 'O');
+
+            const aiWinner = checkWin();
+            if (aiWinner) {
+              endGame(aiWinner);
+              return;
+            }
+            if (isDraw()) {
+              endGame('draw');
+              return;
+            }
+
+            switchPlayer();
+            setBoardDisabled(false);
+          }, 350);
+        }
+      }
+
+      function placeMarker(index, player) {
+        board[index] = player;
+        const cell = cells[index];
+        cell.textContent = player;
+        cell.classList.add(`ttt-cell--${player.toLowerCase()}`, 'ttt-cell--taken', 'ttt-cell--placed');
+        AJ.Sound.play('place');
+      }
+
+      function switchPlayer() {
+        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+        currentPlayerSpan.textContent = currentPlayer;
+        turnIndicator.className = `turn-indicator turn-indicator--${currentPlayer.toLowerCase()}`;
+      }
+
+      function checkWin() {
+        for (const combo of WINNING_COMBOS) {
+          const [a, b, c] = combo;
+          if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+            return { winner: board[a], combo };
+          }
+        }
+        return null;
+      }
+
+      function isDraw() {
+        return board.every(cell => cell !== '');
+      }
+
+      function endGame(result) {
+        gameActive = false;
+
+        if (result === 'draw') {
+          scores.draws++;
+          currentPlayerSpan.textContent = 'Draw! 🤝';
+          turnIndicator.className = 'turn-indicator';
+          AJ.Sound.play('draw');
+
+          setTimeout(() => {
+            AJ.Modal.create({
+              title: '🤝 It\'s a Draw!',
+              body: 'Well played by both sides. Try again?',
+              buttons: [
+                { label: 'New Game', className: 'btn btn--primary', onClick: (m) => { m.close(); restartGame(); } },
+                { label: 'Close', className: 'btn btn--ghost', onClick: (m) => m.close() }
+              ]
+            });
+          }, 500);
+        } else {
+          const { winner, combo } = result;
+          scores[winner.toLowerCase()]++;
+
+          // Highlight winning cells
+          combo.forEach(i => cells[i].classList.add('ttt-cell--win'));
+
+          currentPlayerSpan.textContent = `${winner} Wins! 🏆`;
+          AJ.Sound.play('win');
+
+          // Particles on winning cells
+          combo.forEach((i, idx) => {
+            setTimeout(() => {
+              AJ.Particles.spawnAtElement(cells[i], 10, ['#fbbf24','#f59e0b','#fcd34d','#fff']);
+            }, idx * 100);
+          });
+
+          setTimeout(() => {
+            AJ.Modal.create({
+              title: `🏆 Player ${winner} Wins!`,
+              body: `Congratulations! That was a great move.`,
+              buttons: [
+                { label: 'Play Again', className: 'btn btn--primary', onClick: (m) => { m.close(); restartGame(); } },
+                { label: 'Close', className: 'btn btn--ghost', onClick: (m) => m.close() }
+              ]
+            });
+          }, 700);
+        }
+
+        updateScoreDisplay();
+        AJ.Score.set('ttt_scores', scores);
+      }
+
+      function setBoardDisabled(disabled) {
+        cells.forEach(cell => {
+          cell.classList.toggle('ttt-cell--disabled', disabled);
         });
       }
-    });
-  }
 
-  resetBtn.addEventListener('click', () => {
-    cells.forEach(cell => {
-      cell.textContent = '';
-      cell.classList.remove('x', 'o');
-      cell.style.animation = '';
-    });
-    currentPlayer = 'X';
-    currentPlayerSpan.textContent = currentPlayer;
-    gameActive = true;
-  });
+      /* ── AI (Minimax) ───────────────────────────────────────── */
+      function getAiMove() {
+        // Minimax with alpha-beta pruning
+        let bestScore = -Infinity;
+        let bestMove = -1;
 
-  cells.forEach(cell => cell.addEventListener('click', handleCellClick));
-</script>
+        for (let i = 0; i < 9; i++) {
+          if (board[i] === '') {
+            board[i] = 'O';
+            const score = minimax(board, 0, false, -Infinity, Infinity);
+            board[i] = '';
+            if (score > bestScore) {
+              bestScore = score;
+              bestMove = i;
+            }
+          }
+        }
+        return bestMove;
+      }
+
+      function minimax(b, depth, isMaximizing, alpha, beta) {
+        const winResult = checkWinBoard(b);
+        if (winResult === 'O') return 10 - depth;
+        if (winResult === 'X') return depth - 10;
+        if (b.every(c => c !== '')) return 0;
+
+        if (isMaximizing) {
+          let best = -Infinity;
+          for (let i = 0; i < 9; i++) {
+            if (b[i] === '') {
+              b[i] = 'O';
+              best = Math.max(best, minimax(b, depth + 1, false, alpha, beta));
+              b[i] = '';
+              alpha = Math.max(alpha, best);
+              if (beta <= alpha) break;
+            }
+          }
+          return best;
+        } else {
+          let best = Infinity;
+          for (let i = 0; i < 9; i++) {
+            if (b[i] === '') {
+              b[i] = 'X';
+              best = Math.min(best, minimax(b, depth + 1, true, alpha, beta));
+              b[i] = '';
+              beta = Math.min(beta, best);
+              if (beta <= alpha) break;
+            }
+          }
+          return best;
+        }
+      }
+
+      function checkWinBoard(b) {
+        for (const [a, c2, c3] of WINNING_COMBOS) {
+          if (b[a] && b[a] === b[c2] && b[a] === b[c3]) return b[a];
+        }
+        return null;
+      }
+
+      /* ── Restart ────────────────────────────────────────────── */
+      function restartGame() {
+        board = Array(9).fill('');
+        currentPlayer = 'X';
+        gameActive = true;
+        currentPlayerSpan.textContent = 'X';
+        turnIndicator.className = 'turn-indicator turn-indicator--x';
+
+        cells.forEach(cell => {
+          cell.textContent = '';
+          cell.className = 'ttt-cell';
+        });
+      }
+
+      /* ── Score Display ──────────────────────────────────────── */
+      function updateScoreDisplay() {
+        scoreXEl.textContent     = scores.x;
+        scoreOEl.textContent     = scores.o;
+        scoreDrawsEl.textContent = scores.draws;
+      }
+
+      /* ── Mode Switching ─────────────────────────────────────── */
+      modeSelector.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-mode]');
+        if (!btn) return;
+        const newMode = btn.dataset.mode;
+        if (newMode === mode) return;
+
+        mode = newMode;
+        modeSelector.querySelectorAll('.mode-selector__btn').forEach(b => {
+          const active = b.dataset.mode === mode;
+          b.classList.toggle('mode-selector__btn--active', active);
+          b.setAttribute('aria-checked', active ? 'true' : 'false');
+        });
+
+        AJ.Toast.show(mode === 'ai' ? '🤖 AI mode activated' : '👥 Player vs Player');
+        AJ.Sound.play('click');
+        restartGame();
+      });
+
+      /* ── Event Listeners ────────────────────────────────────── */
+      restartBtn.addEventListener('click', () => {
+        AJ.Sound.play('click');
+        restartGame();
+      });
+
+      resetScoresBtn.addEventListener('click', () => {
+        scores = { x: 0, o: 0, draws: 0 };
+        updateScoreDisplay();
+        AJ.Score.clear('ttt_scores');
+        AJ.Toast.show('Scores reset');
+        AJ.Sound.play('click');
+      });
+
+      /* ── Startup ────────────────────────────────────────────── */
+      AJ.Nav.inject({
+        backHref: 'games.html',
+        backLabel: '← Games Hub'
+      });
+
+      createBoard();
+      updateScoreDisplay();
+
+    })();
+  </script>
 </body>
 </html>
