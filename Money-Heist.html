@@ -127,30 +127,29 @@
 
     /* ── D-Pad ────────────────────────────────────────────── */
     .dpad {
-      position: fixed;
-      right: 16px;
-      bottom: 80px;
       display: grid;
       grid-template-areas:
         ".    up   ."
         "left .    right"
         ".    down .";
-      grid-template-columns: repeat(3, 48px);
-      grid-template-rows: repeat(3, 48px);
+      grid-template-columns: repeat(3, 52px);
+      grid-template-rows: repeat(3, 52px);
       gap: 4px;
       z-index: var(--z-overlay);
       user-select: none;
       -webkit-user-select: none;
+      justify-content: center;
+      margin: var(--space-4) auto var(--space-6);
     }
 
     .dpad__btn {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 48px;
-      height: 48px;
+      width: 52px;
+      height: 52px;
       border-radius: var(--radius-md);
-      background: rgba(255,255,255,0.05);
+      background: rgba(255,255,255,0.07);
       border: 1px solid var(--color-border);
       color: var(--color-text-primary);
       font-weight: 700;
@@ -163,7 +162,7 @@
 
     .dpad__btn:active {
       transform: scale(0.9);
-      background: rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.12);
     }
 
     .dpad__btn--up    { grid-area: up; }
@@ -186,13 +185,59 @@
       padding: var(--space-8);
       box-shadow: var(--shadow-lg);
       text-align: left;
+      max-height: 85vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
     }
 
-    .instr-sheet h2 {
+    .instr-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      position: sticky;
+      top: calc(-1 * var(--space-8));
+      margin: calc(-1 * var(--space-8)) calc(-1 * var(--space-8)) 0;
+      padding: var(--space-4) var(--space-6);
+      background: var(--color-bg-elevated);
+      border-bottom: 1px solid var(--color-border);
+      border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+      z-index: 2;
+      flex-shrink: 0;
+    }
+
+    .instr-header h2 {
       font-family: var(--font-display);
-      font-size: var(--text-2xl);
+      font-size: var(--text-xl);
       color: var(--color-gold);
-      margin-bottom: var(--space-4);
+      margin: 0;
+    }
+
+    .instr-close-x {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-md);
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--color-border);
+      color: var(--color-text-secondary);
+      font-size: var(--text-lg);
+      cursor: pointer;
+      transition: all var(--duration-fast) ease;
+      flex-shrink: 0;
+    }
+
+    .instr-close-x:hover {
+      background: rgba(255,255,255,0.1);
+      color: var(--color-text-primary);
+    }
+
+    .instr-body {
+      padding-top: var(--space-4);
+      flex: 1;
     }
 
     .instr-sheet h3 {
@@ -245,18 +290,114 @@
       color: var(--color-text-secondary);
     }
 
+    .instr-actions {
+      display: flex;
+      gap: var(--space-3);
+      justify-content: flex-end;
+      margin-top: var(--space-6);
+      position: sticky;
+      bottom: calc(-1 * var(--space-8));
+      margin-left: calc(-1 * var(--space-8));
+      margin-right: calc(-1 * var(--space-8));
+      margin-bottom: calc(-1 * var(--space-8));
+      padding: var(--space-4) var(--space-6);
+      background: var(--color-bg-base);
+      border-top: 1px solid var(--color-border);
+      border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+      z-index: 2;
+      flex-shrink: 0;
+    }
+
     @media (max-width: 920px) {
       .instr-cols { grid-template-columns: 1fr; }
+    }
+
+    /* ── Mobile Instructions Overrides ───────────────────── */
+    @media (max-width: 768px) {
+      .instr-sheet {
+        max-height: 80vh;
+        padding: var(--space-4);
+        border-radius: var(--radius-lg);
+      }
+
+      .instr-header {
+        margin: calc(-1 * var(--space-4)) calc(-1 * var(--space-4)) 0;
+        padding: var(--space-3) var(--space-4);
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      }
+
+      .instr-header h2 {
+        font-size: var(--text-base);
+      }
+
+      .instr-body {
+        padding-top: var(--space-3);
+      }
+
+      .instr-sheet h3 {
+        font-size: var(--text-sm);
+        margin: var(--space-3) 0 var(--space-1);
+      }
+
+      .instr-sheet ul {
+        font-size: var(--text-sm);
+        line-height: 1.5;
+        padding-left: var(--space-4);
+      }
+
+      .instr-sheet p {
+        font-size: var(--text-sm);
+      }
+
+      .legend-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 0.95rem;
+      }
+
+      .legend-label {
+        font-size: var(--text-xs);
+      }
+
+      .legend-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-2);
+      }
+
+      .instr-actions {
+        margin: var(--space-4) calc(-1 * var(--space-4)) calc(-1 * var(--space-4));
+        padding: var(--space-3) var(--space-4);
+        border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+        justify-content: stretch;
+      }
+
+      .instr-actions .btn {
+        flex: 1;
+        justify-content: center;
+      }
     }
 
     /* ── Responsive Board ───────────────────────────────── */
     @media (max-width: 640px) {
       :root {
-        --cell-size: 40px;
-        --grid-gap: 4px;
+        --cell-size: 38px;
+        --grid-gap: 3px;
       }
-      .mh-board { padding: 6px; }
-      .mh-cell  { font-size: 1.1rem; }
+      .mh-board {
+        padding: 6px;
+        margin-bottom: var(--space-2);
+      }
+      .mh-cell { font-size: 1rem; }
+    }
+
+    @media (max-width: 380px) {
+      :root {
+        --cell-size: 34px;
+        --grid-gap: 2px;
+      }
+      .mh-board { padding: 4px; }
+      .mh-cell { font-size: 0.9rem; }
     }
   </style>
 </head>
@@ -316,52 +457,61 @@
   <!-- Instructions Modal -->
   <div class="modal-overlay" id="instructions-modal">
     <div class="instr-sheet" role="dialog" aria-modal="true" aria-labelledby="instr-title">
-      <h2 id="instr-title">How to Play — Money Heist: Silent Grid</h2>
-      <div class="instr-cols">
-        <div>
-          <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
-            Collect all the loot 💰 and reach the vault 🏦 without being caught by guards or stepping into active lasers.
-          </p>
-
-          <h3>Controls</h3>
-          <ul>
-            <li><strong>Arrow keys</strong> — move (desktop)</li>
-            <li><strong>D-pad</strong> — tap or hold to move (mobile)</li>
-            <li><strong>P</strong> — Pause / Resume</li>
-            <li><strong>R</strong> — Restart level</li>
-            <li><strong>I</strong> — Toggle instructions</li>
-          </ul>
-
-          <h3>Rules</h3>
-          <ul>
-            <li>Walls block movement — you cannot pass through.</li>
-            <li>Collect all loot 💰 to unlock the vault 🏦.</li>
-            <li>Lasers 🔴 toggle on/off — stepping on one while active = reset.</li>
-            <li>Guards patrol set paths. If they catch you, you start over.</li>
-          </ul>
-
-          <h3>Tips</h3>
-          <ul>
-            <li>Watch guard patrol timing and move in the gaps.</li>
-            <li>Use Pause to study laser timing.</li>
-            <li>Collect loot near the vault last if guards are nearby.</li>
-          </ul>
-        </div>
-
-        <aside style="padding: var(--space-4); background: rgba(255,255,255,0.02); border-radius: var(--radius-md); border: 1px solid var(--color-border);">
-          <strong style="color: var(--color-text-primary);">Legend</strong>
-          <div class="legend-grid" style="margin-top: var(--space-3);">
-            <div class="legend-row"><div class="legend-icon">🕵️</div><span class="legend-label">Player — you</span></div>
-            <div class="legend-row"><div class="legend-icon">🛡</div><span class="legend-label">Guard — patrols</span></div>
-            <div class="legend-row"><div class="legend-icon">💰</div><span class="legend-label">Loot — collect</span></div>
-            <div class="legend-row"><div class="legend-icon">🔴</div><span class="legend-label">Laser (active)</span></div>
-            <div class="legend-row"><div class="legend-icon">⬛</div><span class="legend-label">Wall — blocked</span></div>
-            <div class="legend-row"><div class="legend-icon">🏦</div><span class="legend-label">Vault — goal</span></div>
-          </div>
-        </aside>
+      <!-- Sticky Header -->
+      <div class="instr-header">
+        <h2 id="instr-title">How to Play — Money Heist</h2>
+        <button class="instr-close-x" id="instr-close-x" aria-label="Close instructions">✕</button>
       </div>
 
-      <div style="display: flex; gap: var(--space-3); justify-content: flex-end; margin-top: var(--space-6);">
+      <!-- Scrollable Body -->
+      <div class="instr-body">
+        <div class="instr-cols">
+          <div>
+            <p style="color: var(--color-text-secondary); margin-bottom: var(--space-4);">
+              Collect all the loot 💰 and reach the vault 🏦 without being caught by guards or stepping into active lasers.
+            </p>
+
+            <h3>Controls</h3>
+            <ul>
+              <li><strong>Arrow keys</strong> — move (desktop)</li>
+              <li><strong>D-pad</strong> — tap or hold to move (mobile)</li>
+              <li><strong>P</strong> — Pause / Resume</li>
+              <li><strong>R</strong> — Restart level</li>
+              <li><strong>I</strong> — Toggle instructions</li>
+            </ul>
+
+            <h3>Rules</h3>
+            <ul>
+              <li>Walls block movement — you cannot pass through.</li>
+              <li>Collect all loot 💰 to unlock the vault 🏦.</li>
+              <li>Lasers 🔴 toggle on/off — stepping on one while active = reset.</li>
+              <li>Guards patrol set paths. If they catch you, you start over.</li>
+            </ul>
+
+            <h3>Tips</h3>
+            <ul>
+              <li>Watch guard patrol timing and move in the gaps.</li>
+              <li>Use Pause to study laser timing.</li>
+              <li>Collect loot near the vault last if guards are nearby.</li>
+            </ul>
+          </div>
+
+          <aside style="padding: var(--space-4); background: rgba(255,255,255,0.02); border-radius: var(--radius-md); border: 1px solid var(--color-border);">
+            <strong style="color: var(--color-text-primary);">Legend</strong>
+            <div class="legend-grid" style="margin-top: var(--space-3);">
+              <div class="legend-row"><div class="legend-icon">🕵️</div><span class="legend-label">Player — you</span></div>
+              <div class="legend-row"><div class="legend-icon">🛡</div><span class="legend-label">Guard — patrols</span></div>
+              <div class="legend-row"><div class="legend-icon">💰</div><span class="legend-label">Loot — collect</span></div>
+              <div class="legend-row"><div class="legend-icon">🔴</div><span class="legend-label">Laser (active)</span></div>
+              <div class="legend-row"><div class="legend-icon">⬛</div><span class="legend-label">Wall — blocked</span></div>
+              <div class="legend-row"><div class="legend-icon">🏦</div><span class="legend-label">Vault — goal</span></div>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      <!-- Sticky Actions -->
+      <div class="instr-actions">
         <button class="btn btn--ghost" id="instr-close">Close</button>
         <button class="btn btn--success" id="instr-start">Got it — Start</button>
       </div>
@@ -440,6 +590,7 @@
       const instrBtn     = document.getElementById('instructions-btn');
       const instrModal   = document.getElementById('instructions-modal');
       const instrClose   = document.getElementById('instr-close');
+      const instrCloseX  = document.getElementById('instr-close-x');
       const instrStart   = document.getElementById('instr-start');
       const muteBtn      = document.getElementById('mute-btn');
       const dpad         = document.getElementById('dpad');
@@ -764,6 +915,7 @@
 
       instrBtn.addEventListener('click', openInstructions);
       instrClose.addEventListener('click', closeInstructions);
+      instrCloseX.addEventListener('click', closeInstructions);
       instrStart.addEventListener('click', closeInstructions);
       instrModal.addEventListener('click', (e) => { if (e.target === instrModal) closeInstructions(); });
 
